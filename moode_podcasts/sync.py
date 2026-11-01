@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import time
 
-from moode_podcasts import moode, mpd, net, paths, playlist
+from moode_podcasts import chapters, moode, mpd, net, paths, playlist
 from moode_podcasts.feeds import Podcast, parse_feed
 from moode_podcasts.store import DEFAULT_LIMIT, Store, find
 
@@ -51,6 +51,10 @@ def _episodes(sub: dict, pod: Podcast, images: _Images) -> None:
         name = prev.get("name") or moode.episode_name(podcast, ep.title, taken)
         taken.add(name)
         entry = {"url": ep.url, "name": name, "title": ep.title, "image_src": prev.get("image_src")}
+        # Kapitel nur einmal je Folge suchen (kann einen Teil der Datei laden)
+        entry["chapters"] = (
+            prev["chapters"] if "chapters" in prev else [list(c) for c in chapters.find(ep)]
+        )
         src = ep.image or pod.image
         if src != entry["image_src"] or not moode.has_logo(name):
             for url in (ep.image, pod.image):

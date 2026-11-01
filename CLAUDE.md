@@ -35,6 +35,11 @@ requests, release notes — is English.
   names must stay stable once assigned.
 - moOde's PHP session must be reloaded after `cfg_radio` changes; that runs as
   www-data via `moode-podcasts-reload.path` (`deploy/reload-session.php`).
+- **The moOde tweak** (`deploy/moode_patch.py`) may only replace the exact
+  original lines and must stay revertible byte for byte; on mismatch it does
+  nothing. It only affects rows of type `p`. Keep it this small.
+- Chapter splitting uses MPD `rangeid`; entries with a `Range` are never split
+  again, and the playing song cannot be edited (MPD refuses).
 - Keep image work cheap (`images.square_jpegs` decodes once with `draft`):
   a Pi with a weak power supply resets under sustained full load.
 - `paths.py` reads the environment on every call so tests can redirect it;

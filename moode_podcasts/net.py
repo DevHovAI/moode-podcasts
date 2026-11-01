@@ -32,3 +32,16 @@ def fetch(url: str, limit: int = 20_000_000, timeout: float = 30) -> bytes:
     if len(data) > limit:
         raise FetchError(f"{url}: größer als {limit} Bytes")
     return data
+
+
+def fetch_head(url: str, n: int, timeout: float = 30) -> bytes:
+    """Die ersten n Bytes. Server ohne Range-Unterstützung schicken alles – dann abbrechen."""
+    url = check_url(url)
+    headers = {"User-Agent": USER_AGENT, "Range": f"bytes=0-{n - 1}"}
+    try:
+        with urllib.request.urlopen(
+            urllib.request.Request(url, headers=headers), timeout=timeout
+        ) as r:
+            return r.read(n)
+    except Exception as exc:
+        raise FetchError(f"{url}: {exc}") from exc
