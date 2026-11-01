@@ -381,6 +381,15 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(settings.save(req))
             elif route == "/api/marked":
                 self._json(self._marked(req))
+            elif route == "/api/radio":
+                fav = req.get("favorite")
+                self._json(
+                    radio.update(
+                        req.get("url", ""),
+                        changes=req.get("changes"),
+                        favorite=None if fav is None else bool(fav),
+                    )
+                )
             elif route == "/api/progress":
                 self.player.mark(req["url"], bool(req.get("played")))
                 self._json({"ok": True})

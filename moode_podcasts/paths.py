@@ -13,7 +13,7 @@ def image_cache() -> Path:
 
 
 def moode_db() -> Path:
-    """moOdes Datenbank – nur gelesen, für die Radiosender."""
+    """moOdes Datenbank – nur gelesen; Sender ändert moOde selbst (radio.update)."""
     return Path(os.environ.get("MOODE_PODCASTS_DB", "/var/local/www/db/moode-sqlite3.db"))
 
 
@@ -21,6 +21,11 @@ def mpd_address() -> tuple[str, int]:
     return os.environ.get("MOODE_PODCASTS_MPD_HOST", "localhost"), int(
         os.environ.get("MOODE_PODCASTS_MPD_PORT", "6600")
     )
+
+
+def moode_url() -> str:
+    """moOdes eigene Weboberfläche – über sie ändern wir Sender, nie direkt in der Datenbank."""
+    return os.environ.get("MOODE_PODCASTS_MOODE_URL", "http://127.0.0.1").rstrip("/")
 
 
 def moode_www() -> Path:

@@ -200,3 +200,22 @@ def test_marked_api(server):
     assert status == 400
     status, _ = call(server, "POST", "/api/marked", json.dumps({"action": "clear"}), page=False)
     assert status == 403
+
+
+def test_radio_update_api(server, monkeypatch):
+    from moode_podcasts import radio
+
+    calls = []
+    monkeypatch.setattr(
+        radio,
+        "update",
+        lambda url, changes=None, favorite=None: (
+            calls.append((url, changes, favorite)) or {"url": url}
+        ),
+    )
+    body = {"url": "http://r/wdr5", "favorite": 1, "changes": {"genre": "News"}}
+    status, raw = call(server, "POST", "/api/radio", json.dumps(body))
+    assert status == 200, raw
+    assert calls == [("http://r/wdr5", {"genre": "News"}, True)]
+    status, _ = call(server, "POST", "/api/radio", json.dumps(body), page=False)
+    assert status == 403 and len(calls) == 1

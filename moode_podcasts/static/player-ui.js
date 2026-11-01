@@ -53,6 +53,10 @@ function render(S) {
   $("#np-chapter").textContent = info.chapter;
   setSrc($("#np-cover"), info.cover);
   $("#np-cover").classList.toggle("radio", info.radio);
+  // ⋯ nur bei Sendern: öffnet dasselbe Menü wie auf den Kacheln
+  const more = $("#sheet-more");
+  more.style.visibility = info.radio ? "visible" : "hidden";
+  if (info.radio) more.dataset.stationMenu = S.current.url; else delete more.dataset.stationMenu;
   $("#np-seek-wrap").classList.toggle("hidden", info.radio || !S.duration);
   if (S.volume >= 0 && document.activeElement !== $("#np-volume")) $("#np-volume").value = S.volume;
   $("#np-status").textContent = S.seeking != null ? "Springe …" : (S.error ? "⚠ " + S.error : "");

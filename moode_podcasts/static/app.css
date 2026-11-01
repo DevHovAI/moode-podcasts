@@ -186,3 +186,11 @@ input[type=color] { width: 44px; height: 36px; border: 0; background: none; padd
 .mark { color: var(--dim); }
 .mark.on { color: var(--acc); }
 .btn.mark.on { color: var(--fg); box-shadow: inset 0 0 0 2px var(--acc); }
+
+/* Senderkacheln: Favoriten-Herz und ⋯-Menü auf dem Logo */
+.tile-img { position: relative; }
+.tile-img .fav { position: absolute; left: 6px; top: 4px; color: var(--acc); font-size: 16px; text-shadow: 0 0 3px #fff; }
+.tile-img .more { position: absolute; right: 2px; top: 2px; width: 32px; height: 32px; font-size: 18px;
+  border-radius: 50%; background: rgba(0,0,0,.45); color: #fff; }
+.station-form { margin-top: 14px; display: grid; gap: 10px; }
+.station-form label { display: grid; gap: 4px; font-size: 13px; color: var(--dim); }

@@ -22,8 +22,11 @@ requests, release notes — is English.
 - **Standard library only** at runtime. The target is a Raspberry Pi with
   moOde; nothing gets pip-installed there. Pillow is used if present (it is
   on moOde), never required.
-- **moOde is not modified** (since 0.3). We only talk to MPD and read moOde's
-  `cfg_radio`.
+- **moOde is not modified** (since 0.3). We talk to MPD and read moOde's
+  `cfg_radio`. Station changes (favourite, edit) go only through moOde's own
+  `command/radio.php?cmd=upd_station` (`radio.update`), never straight into
+  the database. moOde puts most fields into SQL unescaped, so `radio._clean`
+  rejects quotes; the name is not editable (moOde keys .pls and logo on it).
 - MPD's queue is the queue: insert after the current song, never clear it.
 - MPD 0.24 filters have **no OR** and fold case only for ASCII: see
   `library._find_artist` and the search variants; the fake MPD in

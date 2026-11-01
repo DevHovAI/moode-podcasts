@@ -4,8 +4,8 @@ A podcast, radio and music player page for the [moOde audio player](https://mood
 
 It runs on the moOde device and serves a mobile-friendly web page on port 8090.
 The page is a remote control: it drives moOde's MPD, so sound comes out of
-your hi-fi, and every phone, tablet or PC sees the same state. moOde itself is
-not modified.
+your hi-fi, and every phone, tablet or PC sees the same state. moOde's own files are not
+modified; station changes go through moOde's own interface.
 
 - **Start**: a home screen you assemble from blocks (saved for later,
   continue listening, new episodes, a podcast, favourite stations, a radio
@@ -20,7 +20,8 @@ not modified.
 - **Resume**: remembers where you stopped in every episode, shows progress and
   "played"
 - **Radio**: all of moOde's stations with their logos, favourites first,
-  grouped by genre, language or broadcaster
+  grouped by genre, language or broadcaster; mark favourites and edit a
+  station's stream address, website, genre, broadcaster, language and country
 - **Music**: moOde's local library: artists (A–Z), albums, genres, recently
   added; play or queue albums and tracks; covers come from moOde
 - **Search** across subscriptions, episodes, radio stations and music
@@ -72,8 +73,11 @@ To remove it again: `sudo sh deploy/uninstall.sh`.
 - **Chapters** come from the feed (Podlove Simple Chapters, `podcast:chapters`)
   or the ID3 chapter frames at the start of the file. They are looked up for
   the newest episodes during the refresh, for older ones when first played.
-- **Radio stations** are read (never written) from moOde's station table; the
-  logos are served by moOde itself.
+- **Radio stations** are read from moOde's station table; the logos are served
+  by moOde itself. Favourites and edits are sent to moOde's own
+  `command/radio.php` (the same call moOde's station editor makes), so moOde
+  updates its database, session and `.pls` file itself. Names and logos are
+  changed in moOde.
 - **Music** comes from MPD's database (`list`/`find`/`search`); album covers
   are served by moOde's `coverart.php`. Add music sources (NAS, USB) in moOde's
   library settings as usual.
