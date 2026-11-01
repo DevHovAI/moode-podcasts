@@ -238,3 +238,21 @@ def test_sleep_action_validates(server, monkeypatch):
         got, raw = call(server, "POST", "/api/player", json.dumps(body))
         assert got == status, (body, raw)
     assert calls == [(30, False), (None, True), (None, False)]
+
+
+def test_backup_api_round_trip(server):
+    status, raw = call(server, "POST", "/api/backup", json.dumps({"parts": ["podcasts", "page"]}))
+    assert status == 200, raw
+    token = json.loads(raw)["token"]
+    status, body = call(server, "GET", f"/api/backup/file?token={token}")
+    assert status == 200 and body[:2] == b"PK"
+    status, _ = call(server, "GET", f"/api/backup/file?token={token}")
+    assert status == 404  # nur einmal abholbar
+    status, raw = call(server, "POST", "/api/backup/inspect", body)
+    assert status == 200 and json.loads(raw)["parts"] == ["podcasts", "page"]
+    status, raw = call(server, "POST", "/api/backup/restore", json.dumps({"parts": ["page"]}))
+    assert status == 200 and json.loads(raw)["restored"] == ["page"]
+    status, _ = call(server, "POST", "/api/backup/restore", json.dumps({"parts": ["page"]}))
+    assert status == 400  # Upload ist verbraucht
+    status, _ = call(server, "POST", "/api/backup", json.dumps({"parts": ["page"]}), page=False)
+    assert status == 403

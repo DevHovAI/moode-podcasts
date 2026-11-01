@@ -5,13 +5,27 @@ from __future__ import annotations
 import json
 import logging
 import queue
+import secrets
 import threading
 import urllib.parse
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib import resources
+from pathlib import Path
 
-from moode_podcasts import directory, images, library, marked, net, opml, radio, settings, sync
+from moode_podcasts import (
+    backup,
+    directory,
+    images,
+    library,
+    marked,
+    net,
+    opml,
+    paths,
+    radio,
+    settings,
+    sync,
+)
 from moode_podcasts.mpd import Mpd
 from moode_podcasts.player import Player, check_path
 from moode_podcasts.store import Marked, Progress, Store, find
@@ -19,6 +33,16 @@ from moode_podcasts.store import Marked, Progress, Store, find
 log = logging.getLogger(__name__)
 
 MAX_BODY = 2_000_000
+MAX_BACKUP = 500_000_000  # moOdes Sicherung mit allen Senderlogos hat ~70 MB
+
+
+def _restore_file() -> Path:
+    """Hochgeladene Sicherung bis zum Einspielen."""
+    return paths.work_dir() / "restore.zip"
+
+
+_backups: dict[str, tuple[Path, str]] = {}  # Token -> (fertige Sicherung, Dateiname)
+_backups_lock = threading.Lock()
 TYPES = {
     ".html": "text/html; charset=utf-8",
     ".js": "text/javascript; charset=utf-8",
@@ -260,10 +284,35 @@ class Handler(BaseHTTPRequestHandler):
                 "text/x-opml; charset=utf-8",
                 {"Content-Disposition": disposition},
             )
+        elif route == "/api/backup/file":
+            self._backup_file(q.get("token", ""))
         elif route == "/img":
             self._image(q.get("u", ""), int(q.get("s", "160") or 160))
         else:
             self._error("nicht gefunden", HTTPStatus.NOT_FOUND)
+
+    def _backup_file(self, token: str) -> None:
+        """Fertige Sicherung einmal ausliefern (Token aus POST /api/backup), dann wegräumen."""
+        with _backups_lock:
+            entry = _backups.pop(token, None)
+        if entry is None:
+            self._error(
+                "Sicherung nicht mehr vorhanden – bitte neu erstellen", HTTPStatus.NOT_FOUND
+            )
+            return
+        zip_path, name = entry
+        try:
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "application/zip")
+            self.send_header("Content-Length", str(zip_path.stat().st_size))
+            self.send_header("Content-Disposition", f'attachment; filename="{name}"')
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            with open(zip_path, "rb") as f:
+                while chunk := f.read(backup.CHUNK):
+                    self.wfile.write(chunk)
+        finally:
+            backup.discard(zip_path)
 
     def _library(self, what: str, q: dict) -> None:
         with Mpd(timeout=20) as m:
@@ -338,6 +387,11 @@ class Handler(BaseHTTPRequestHandler):
         if not self._from_page():
             return
         try:
+            if route == "/api/backup/inspect":
+                n = int(self.headers.get("Content-Length") or 0)
+                backup.save_upload(self.rfile, n, _restore_file(), MAX_BACKUP)
+                self._json(backup.inspect(_restore_file()))
+                return
             if route == "/api/opml/preview":
                 found = opml.read(self._body())
                 have = {s["url"] for s in self.store.load()}
@@ -374,6 +428,23 @@ class Handler(BaseHTTPRequestHandler):
                         favorite=None if fav is None else bool(fav),
                     )
                 )
+            elif route == "/api/backup":
+                zip_path = backup.create(req.get("parts", []))
+                token = secrets.token_urlsafe(16)
+                with _backups_lock:
+                    # nur die jüngste Sicherung bereithalten
+                    for old, _ in _backups.values():
+                        backup.discard(old)
+                    _backups.clear()
+                    _backups[token] = (zip_path, backup.filename())
+                self._json({"token": token, "size": zip_path.stat().st_size})
+            elif route == "/api/backup/restore":
+                if not _restore_file().exists():
+                    raise ValueError("Bitte die Sicherung zuerst hochladen")
+                try:
+                    self._json(backup.restore(_restore_file(), req.get("parts", [])))
+                finally:
+                    _restore_file().unlink(missing_ok=True)
             elif route == "/api/progress":
                 self.player.mark(req["url"], bool(req.get("played")))
                 self._json({"ok": True})

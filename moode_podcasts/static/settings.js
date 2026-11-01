@@ -1,5 +1,6 @@
 // Einstellungen (gemeinsam auf dem Pi): Farbschema; die Startseite bearbeitet home.js.
 import {$, $$, api, esc, post, toast, view} from "./core.js";
+import {renderBackup} from "./backup.js";
 
 // Je Theme eine dunkle und eine helle Fassung
 export const PRESETS = {
@@ -98,4 +99,5 @@ export function viewSettings() {
   $$("[data-accent]").forEach(b => b.onclick = async () => { await save({accent: b.dataset.accent, follow_moode: false}); viewSettings(); });
   $("#custom-accent").onchange = async e => { await save({accent: e.target.value, follow_moode: false}); viewSettings(); };
   $("#follow").onchange = async e => { await save({follow_moode: e.target.checked}); viewSettings(); };
+  renderBackup(view());
 }
