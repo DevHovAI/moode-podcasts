@@ -259,6 +259,10 @@ class Player:
             pos = int(st["song"]) + 1 if "song" in st else None
             sid = self._add(m, url, pos)
             m.command(f"playid {sid}")
+        self._resume(sid, url)
+
+    def _resume(self, sid: str, url: str) -> None:
+        """Angefangene Folge an der gespeicherten Stelle fortsetzen."""
         resume = self._resume_point(url)
         if resume:
             self.seek_target = (sid, resume, time.time())
@@ -272,7 +276,7 @@ class Player:
             self._add(m, url, None)
 
     def play_many(self, files: list[str], now: bool = True) -> None:
-        """Mehrere Titel (ein Album) nach dem laufenden einfügen bzw. hinten anhängen."""
+        """Mehrere Einträge (Album, Vorgemerkt) nach dem laufenden einfügen bzw. hinten anhängen."""
         if not files:
             return
         with self.lock, Mpd() as m:
@@ -281,6 +285,8 @@ class Player:
             ids = [self._add(m, f, None if pos is None else pos + i) for i, f in enumerate(files)]
             if now:
                 m.command(f"playid {ids[0]}")
+        if now:
+            self._resume(ids[0], files[0])
 
     def _resume_point(self, url: str) -> float:
         entry = self.progress.load().get(url, {})

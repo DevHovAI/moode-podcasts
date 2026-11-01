@@ -7,13 +7,16 @@ The page is a remote control: it drives moOde's MPD, so sound comes out of
 your hi-fi, and every phone, tablet or PC sees the same state. moOde itself is
 not modified.
 
-- **Start**: a home screen you assemble from blocks (continue listening, new
-  episodes, a podcast, favourite stations, a radio genre or language, recently
-  added music, a music genre or artist), shared by all devices
+- **Start**: a home screen you assemble from blocks (saved for later,
+  continue listening, new episodes, a podcast, favourite stations, a radio
+  genre or language, recently added music, a music genre or artist), shared by
+  all devices
 - **Podcasts**: one tab with New, My podcasts (grouped by genre), Continue
   listening and Discover, each a short preview with 'show all'
 - **Player**: seek bar, ±30 s, chapter list (tap to jump), shownotes,
-  next/previous jump between chapters, a queue ("up next")
+  next/previous jump between chapters, the queue ("Warteschlange")
+- **Saved for later** ("Vorgemerkt"): a starred list of episodes, tracks and
+  albums kept on the device; finished episodes drop out by themselves
 - **Resume**: remembers where you stopped in every episode, shows progress and
   "played"
 - **Radio**: all of moOde's stations with their logos, favourites first,
@@ -65,6 +68,7 @@ moOde's files are restored byte for byte.
 | program | `/opt/moode-podcasts` |
 | subscriptions and episode lists | `/var/lib/moode-podcasts/feeds.json` |
 | listening progress | `/var/lib/moode-podcasts/progress.json` |
+| saved for later | `/var/lib/moode-podcasts/marked.json` |
 | theme and home screen (all devices) | `/var/lib/moode-podcasts/settings.json` |
 | resized cover images | `/var/lib/moode-podcasts/img/` |
 | services | `moode-podcasts-web.service`, `moode-podcasts-sync.timer` |

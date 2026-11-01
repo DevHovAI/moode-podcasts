@@ -108,7 +108,7 @@ function renderQueue(S) {
       <button class="icon" data-move="${it.id}" data-off="-1" ${i === 0 ? "disabled" : ""} aria-label="Nach oben">↑</button>
       <button class="icon" data-move="${it.id}" data-off="1" ${i === items.length - 1 ? "disabled" : ""} aria-label="Nach unten">↓</button>
       <button class="icon" data-remove="${it.id}" aria-label="Entfernen">✕</button>
-    </div>`).join("") : `<p class="muted small">Nichts vorgemerkt. Mit ＋ kommt etwas hierher.</p>`;
+    </div>`).join("") : `<p class="muted small">Die Warteschlange ist leer. Mit ＋ kommt etwas hierher.</p>`;
 }
 
 async function loadNotes() {

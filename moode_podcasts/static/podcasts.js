@@ -1,6 +1,7 @@
 // Podcasts: Übersicht mit Abschnitten, volle Listen, Podcast-Seite, Entdecken.
-import {$, api, esc, fmtDate, fmtDur, fmtTime, hideBroken, img, label, live, post, player,
+import {$, api, esc, fmtDate, fmtDur, fmtTime, hideBroken, img, label, live, markBtn, post, player,
         section, toast, view} from "./core.js";
+import {markedList} from "./marked.js";
 import {openPlayer} from "./player-ui.js";
 
 const episodes = new Map();  // Adresse → Folge, für Klicks in Listen
@@ -18,8 +19,8 @@ export function epRow(ep, showPodcast = true) {
     <img src="${img(ep.image || ep.podcast_image)}" alt="" loading="lazy" onerror="${hideBroken}">
     <div class="meta" data-details><div class="t">${esc(ep.title)}</div><div class="s">${esc(sub)}</div>
       ${pct ? `<div class="prog"><div style="width:${pct}%"></div></div>` : ""}</div>
-    <div class="acts">
-      <button class="icon" data-ep="enqueue" aria-label="Vormerken">＋</button>
+    <div class="acts">${markBtn({kind: "episode", url: ep.url})}
+      <button class="icon" data-ep="enqueue" aria-label="In die Warteschlange">＋</button>
       <button class="icon play-btn" data-ep="play" aria-label="Abspielen">▶</button>
     </div></div>`;
 }
@@ -41,7 +42,7 @@ export function initEpisodeClicks() {
     const ep = episodes.get(row.dataset.url);
     const act = e.target.closest("[data-ep]");
     if (act && act.dataset.ep === "play") { await player("play", {url: ep.url}); openPlayer(); }
-    else if (act && act.dataset.ep === "enqueue") { await player("enqueue", {url: ep.url}); toast("Vorgemerkt"); }
+    else if (act && act.dataset.ep === "enqueue") { await player("enqueue", {url: ep.url}); toast("In der Warteschlange"); }
     else if (e.target.closest("[data-details]")) showDetails(ep);
   });
   live.listeners.add(S => {
@@ -60,7 +61,8 @@ async function showDetails(ep) {
     <div class="muted small">${esc([ep.podcast, fmtDate(ep.published), fmtDur(ep.duration)].filter(Boolean).join(" · "))}</div>
     <div class="bar" style="margin-top:12px">
       <button class="btn acc" data-m="play">▶ Abspielen</button>
-      <button class="btn" data-m="enqueue">＋ Vormerken</button>
+      <button class="btn" data-m="enqueue">＋ Warteschlange</button>
+      ${markBtn({kind: "episode", url: ep.url}, true)}
       <button class="btn" data-m="mark">${played ? "Als ungehört markieren" : "Als gehört markieren"}</button>
     </div>
     ${(full.chapters || []).length ? `<h2>Kapitel</h2>${full.chapters.map(c =>
@@ -71,7 +73,7 @@ async function showDetails(ep) {
     if (ev.target === m) { m.remove(); return; }
     if (!b) return;
     if (b.dataset.m === "play") { await player("play", {url: ep.url}); openPlayer(); }
-    if (b.dataset.m === "enqueue") { await player("enqueue", {url: ep.url}); toast("Vorgemerkt"); }
+    if (b.dataset.m === "enqueue") { await player("enqueue", {url: ep.url}); toast("In der Warteschlange"); }
     if (b.dataset.m === "mark") {
       await post("/api/progress", {url: ep.url, played: !played});
       window.dispatchEvent(new HashChangeEvent("hashchange"));
@@ -87,8 +89,9 @@ const noSubs = `<p class="muted">Noch keine Abos – unten unter <b>Entdecken</b
 // --- Übersicht ---------------------------------------------------------------
 
 export async function viewPodcasts() {
-  const [latest, subs, cont, recs] = await Promise.all([
-    api("/api/latest"), api("/api/subscriptions"), api("/api/continue"), api("/api/recommendations")]);
+  const [latest, subs, cont, recs, marked] = await Promise.all([
+    api("/api/latest"), api("/api/subscriptions"), api("/api/continue"), api("/api/recommendations"),
+    api("/api/marked")]);
   const have = new Set(subs.map(s => s.url));
   const fresh = latest.filter(e => !(e.progress || {}).played).slice(0, 5);
   view().innerHTML =
@@ -96,6 +99,7 @@ export async function viewPodcasts() {
     section("Meine Podcasts", subs.length ? `<div class="row">${subs.slice(0, 12).map(podTile).join("")}</div>` : noSubs,
             subs.length ? "#podcasts/abos" : "") +
     (cont.length ? section("Weiterhören", epList(cont.slice(0, 5)), "#podcasts/weiter") : "") +
+    (marked.length ? section("Vorgemerkt", markedList(marked.slice(0, 5)), "#vorgemerkt") : "") +
     section("Entdecken", `<div class="row">${recs.filter(r => !have.has(r.url)).slice(0, 10).map(recTile).join("")}</div>`,
             "#podcasts/entdecken", "Mehr entdecken");
   bindSubscribe();

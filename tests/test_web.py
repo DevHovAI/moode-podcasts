@@ -7,7 +7,7 @@ import pytest
 
 from moode_podcasts import web
 from moode_podcasts.player import Player
-from moode_podcasts.store import Progress, Store
+from moode_podcasts.store import Marked, Progress, Store
 
 FEED = "https://e.org/feed"
 
@@ -41,6 +41,7 @@ def server(dirs):
     with progress.edit() as prog:
         prog["https://e.org/old.mp3"] = {"pos": 10, "played": True}
     web.Handler.store, web.Handler.progress = store, progress
+    web.Handler.marked = Marked()
     web.Handler.player = Player(store, progress)
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), web.Handler)
     httpd.daemon_threads = True
@@ -180,3 +181,22 @@ def test_library_api_and_cover_redirect(server, mpd):
     resp = conn.getresponse()
     assert resp.status == 302
     assert resp.getheader("Location") == "http://moode/coverart.php/NAS/A/Album%201/01.flac"
+
+
+def test_marked_api(server):
+    def post(body):
+        status, raw = call(server, "POST", "/api/marked", json.dumps(body))
+        assert status == 200, raw
+        return json.loads(raw)
+
+    items = post({"action": "add", "kind": "episode", "url": "https://e.org/new.mp3"})
+    assert [i["title"] for i in items] == ["Neu"]
+    # schon gehörte Folge fällt sofort wieder heraus
+    items = post({"action": "add", "kind": "episode", "url": "https://e.org/old.mp3"})
+    assert [i["title"] for i in items] == ["Neu"]
+    assert get_json(server, "/api/marked") == items
+    assert post({"action": "remove", "url": "https://e.org/new.mp3"}) == []
+    status, _ = call(server, "POST", "/api/marked", json.dumps({"action": "play"}))
+    assert status == 400
+    status, _ = call(server, "POST", "/api/marked", json.dumps({"action": "clear"}), page=False)
+    assert status == 403

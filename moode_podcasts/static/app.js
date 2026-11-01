@@ -1,6 +1,7 @@
 // Einstieg: Reiter, Navigation, Start.
-import {$$, connect, esc, view} from "./core.js";
+import {$$, connect, esc, initMarkClicks, loadMarks, view} from "./core.js";
 import {viewHome} from "./home.js";
+import {initMarkedClicks, viewMarked} from "./marked.js";
 import {viewMusic} from "./music.js";
 import {closePlayer, initPlayer} from "./player-ui.js";
 import {initEpisodeClicks, viewPodcast, viewPodcasts, viewPodcastsFull} from "./podcasts.js";
@@ -13,15 +14,17 @@ async function route() {
   const h = location.hash.slice(1) || "start";
   const m = h.match(/^([a-z]+)(?:[/=](.*))?$/s) || [h, "start", ""];
   const [, name, arg = ""] = m;
-  const tab = {podcast: "podcasts", einstellungen: "", suche: ""}[name] ?? name;
+  const tab = {podcast: "podcasts", einstellungen: "", suche: "", vorgemerkt: ""}[name] ?? name;
   $$("#tabs a").forEach(a => a.classList.toggle("on", a.dataset.view === tab));
   $$(".top .icon").forEach(a => a.classList.toggle("on", a.dataset.view === name));
   view().onclick = null;
   closePlayer();
+  $$(".modal").forEach(m => m.remove());
   window.scrollTo(0, 0);
   try {
     if (name === "podcasts") await (arg ? viewPodcastsFull(arg) : viewPodcasts());
     else if (name === "podcast") await viewPodcast(decodeURIComponent(arg));
+    else if (name === "vorgemerkt") await viewMarked();
     else if (name === "radio") await viewRadio();
     else if (name === "musik") await viewMusic(arg);
     else if (name === "suche") viewSearch(decodeURIComponent(arg));
@@ -36,5 +39,7 @@ window.addEventListener("hashchange", route);
 initPlayer();
 initEpisodeClicks();
 initStationClicks();
-loadSettings().catch(() => {}).finally(route);
+initMarkClicks();
+initMarkedClicks();
+Promise.all([loadSettings(), loadMarks()].map(p => p.catch(() => {}))).then(route);
 connect();

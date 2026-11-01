@@ -32,6 +32,8 @@ requests, release notes — is English.
 - The UI is plain ES modules in `static/` (no build step); `web.static_file`
   serves only files that exist there. Settings (theme, home blocks) are shared
   via `settings.json` and validated in `settings.clean`.
+- "Warteschlange" is MPD's queue; "Vorgemerkt" (`marked.py`, `marked.json`)
+  is our own saved list. Played episodes are pruned when the list is read.
 - Resume: MPD answers "Not seekable" right after starting a stream, so
   `Player._seek_when_ready` retries. Far seeks are slow with moOde's `mad`
   decoder — never "fix" that by changing moOde's MPD config.

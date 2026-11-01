@@ -1,11 +1,13 @@
 // Startseite aus Bausteinen – auf dem Pi gespeichert, auf allen Geräten gleich.
 import {$, $$, api, esc, label, post, q, section, toast, view} from "./core.js";
 import {albumTile} from "./music.js";
+import {markedList} from "./marked.js";
 import {epList} from "./podcasts.js";
 import {stationTile} from "./radio.js";
 import {getSettings, setSettings} from "./settings.js";
 
 export const BLOCKS = {
+  marked: {name: "Vorgemerkt"},
   continue: {name: "Weiterhören"},
   latest: {name: "Neue Folgen"},
   podcast: {name: "Ein Podcast", ref: "podcast"},
@@ -25,6 +27,7 @@ const stations = () => once("radio", () => api("/api/radio"));
 async function blockBody(b) {
   const n = b.limit || 6;
   switch (b.type) {
+    case "marked": return markedList((await api("/api/marked")).slice(0, n));
     case "continue": return epList((await api("/api/continue")).slice(0, n));
     case "latest": return epList((await api("/api/latest")).filter(e => !(e.progress || {}).played).slice(0, n));
     case "podcast": {
@@ -52,7 +55,7 @@ async function blockBody(b) {
 }
 
 function moreLink(b) {
-  return {continue: "#podcasts/weiter", latest: "#podcasts/neu", podcast: `#podcast=${q(b.ref)}`,
+  return {marked: "#vorgemerkt", continue: "#podcasts/weiter", latest: "#podcasts/neu", podcast: `#podcast=${q(b.ref)}`,
           radio_favorites: "#radio", radio_genre: "#radio", radio_language: "#radio",
           music_recent: "#musik/neu", music_genre: `#musik/genre=${q(b.ref)}`,
           music_artist: `#musik/kuenstler=${q(b.ref)}`}[b.type] || "";

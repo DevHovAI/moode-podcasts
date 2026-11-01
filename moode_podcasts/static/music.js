@@ -1,5 +1,5 @@
 // Musik: lokale Bibliothek aus MPD – Künstler, Alben, Genres, zuletzt hinzugefügt.
-import {$, $$, albumCover, api, esc, fmtTime, hideBroken, player, q, section, toast, view} from "./core.js";
+import {$, $$, albumCover, api, esc, fmtTime, hideBroken, markBtn, player, q, section, toast, view} from "./core.js";
 import {openPlayer} from "./player-ui.js";
 
 const TABS = {kuenstler: "Künstler", alben: "Alben", genres: "Genres", neu: "Neu hinzugefügt"};
@@ -77,20 +77,22 @@ async function albumPage(artist, album) {
       <div class="grow"><h1>${esc(album)}</h1><div class="muted">${esc(artist)}</div>
       <div class="muted small">${tracks.length} Titel · ${fmtTime(total)}${tracks[0] && tracks[0].date ? " · " + esc(tracks[0].date) : ""}</div>
       <div class="bar" style="margin-top:10px"><button class="btn acc" id="play-album">▶ Album abspielen</button>
-        <button class="btn" id="queue-album">＋ Vormerken</button></div></div></div>
+        <button class="btn" id="queue-album">＋ Warteschlange</button>
+        ${markBtn({kind: "album", artist, album}, true)}</div></div></div>
     <div class="list">${tracks.map(t => `<div class="track" data-file="${esc(t.file)}">
       <span class="no">${esc(t.track.split("/")[0])}</span>
       <div class="meta"><div class="t">${esc(t.title)}</div>${t.artist !== artist ? `<div class="s">${esc(t.artist)}</div>` : ""}</div>
       <span class="muted small">${fmtTime(t.duration)}</span>
-      <button class="icon" data-track="enqueue" aria-label="Vormerken">＋</button>
+      ${markBtn({kind: "song", url: t.file, title: t.title, artist: t.artist, album})}
+      <button class="icon" data-track="enqueue" aria-label="In die Warteschlange">＋</button>
       <button class="icon play-btn" data-track="play" aria-label="Abspielen">▶</button></div>`).join("")}</div>`;
   $("#play-album").onclick = async () => { await player("album", {artist, album, now: true}); openPlayer(); };
-  $("#queue-album").onclick = async () => { await player("album", {artist, album, now: false}); toast("Album vorgemerkt"); };
+  $("#queue-album").onclick = async () => { await player("album", {artist, album, now: false}); toast("Album in der Warteschlange"); };
   view().onclick = async e => {
     const b = e.target.closest("[data-track]");
     if (!b) return;
     const file = b.closest(".track").dataset.file;
     if (b.dataset.track === "play") { await player("play", {url: file}); openPlayer(); }
-    else { await player("enqueue", {url: file}); toast("Vorgemerkt"); }
+    else { await player("enqueue", {url: file}); toast("In der Warteschlange"); }
   };
 }

@@ -14,6 +14,7 @@ from pathlib import Path
 from moode_podcasts import paths
 
 BLOCK_TYPES = {
+    "marked",  # Vorgemerkt
     "continue",  # Weiterhören
     "latest",  # neue Folgen
     "podcast",  # ein bestimmter Podcast (ref = Feed-Adresse)
@@ -28,6 +29,7 @@ BLOCK_TYPES = {
 DEFAULTS = {
     "theme": {"preset": "moode", "mode": "dark", "accent": "", "follow_moode": False},
     "home": [
+        {"type": "marked", "title": "Vorgemerkt", "limit": 6},
         {"type": "continue", "title": "Weiterhören", "limit": 6},
         {"type": "latest", "title": "Neue Folgen", "limit": 6},
         {"type": "radio_favorites", "title": "Lieblingssender", "limit": 12},

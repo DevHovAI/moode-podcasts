@@ -93,3 +93,44 @@ const NAMES = {
   "Luxembourgish": "Luxemburgisch", "Norwegian": "Norwegisch", "Portuguese": "Portugiesisch",
 };
 export const label = s => NAMES[s] || s;
+
+// Vorgemerkt: die Liste liegt auf dem Pi; hier nur ihre Schlüssel, damit die Sterne stimmen
+const marks = {keys: new Set()};
+const markKey = it => it.kind === "album" ? `album:${it.artist}|${it.album}` : it.url;
+export const isMarked = it => marks.keys.has(markKey(it));
+
+function markLabel(el, on) {
+  el.classList.toggle("on", on);
+  el.textContent = el.classList.contains("btn") ? (on ? "★ Vorgemerkt" : "☆ Vormerken") : (on ? "★" : "☆");
+  el.setAttribute("aria-label", on ? "Nicht mehr vormerken" : "Vormerken");
+}
+
+export function setMarks(items) {
+  marks.keys = new Set(items.map(i => i.key));
+  $$("[data-mark]").forEach(el => markLabel(el, isMarked(JSON.parse(el.dataset.mark))));
+  return items;
+}
+export const loadMarks = () => api("/api/marked").then(setMarks);
+export const markAction = (action, extra = {}) =>
+  post("/api/marked", {action, ...extra}).then(setMarks);
+
+// Stern-Knopf; it = {kind: episode|song|album, url | artist+album, title …}
+export function markBtn(it, big = false) {
+  const on = isMarked(it);
+  return `<button class="${big ? "btn" : "icon"} mark${on ? " on" : ""}" data-mark="${esc(JSON.stringify(it))}"
+    aria-label="${on ? "Nicht mehr vormerken" : "Vormerken"}">${big ? (on ? "★ Vorgemerkt" : "☆ Vormerken") : (on ? "★" : "☆")}</button>`;
+}
+
+export function initMarkClicks() {
+  document.addEventListener("click", async e => {
+    const b = e.target.closest("[data-mark]");
+    if (!b) return;
+    e.stopPropagation();
+    const it = JSON.parse(b.dataset.mark), on = isMarked(it);
+    try {
+      await markAction(on ? "remove" : "add", it);
+      toast(on ? "Nicht mehr vorgemerkt" : "Vorgemerkt");
+      if (location.hash.startsWith("#vorgemerkt")) window.dispatchEvent(new HashChangeEvent("hashchange"));
+    } catch (err) { toast(err.message); }
+  }, true);
+}
