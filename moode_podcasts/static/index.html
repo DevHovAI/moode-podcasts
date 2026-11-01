@@ -4,17 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1b1b1d">
-<title>Podcasts & Radio</title>
+<title>Podcasts, Radio & Musik</title>
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
 <header class="top">
-  <nav id="tabs">
-    <a href="#neu" data-view="neu">Neu</a>
-    <a href="#podcasts" data-view="podcasts">Podcasts</a>
-    <a href="#radio" data-view="radio">Radio</a>
-    <a href="#entdecken" data-view="entdecken">Entdecken</a>
-  </nav>
+  <div class="top-row">
+    <nav id="tabs">
+      <a href="#start" data-view="start">Start</a>
+      <a href="#podcasts" data-view="podcasts">Podcasts</a>
+      <a href="#radio" data-view="radio">Radio</a>
+      <a href="#musik" data-view="musik">Musik</a>
+    </nav>
+    <a class="icon" href="#suche" data-view="suche" aria-label="Suche">🔍</a>
+    <a class="icon" href="#einstellungen" data-view="einstellungen" aria-label="Einstellungen">⚙</a>
+  </div>
 </header>
 
 <main id="view"></main>
@@ -58,7 +62,7 @@
     <div class="np-volume"><span>🔈</span><input type="range" id="np-volume" min="0" max="100" aria-label="Lautstärke"><span>🔊</span></div>
 
     <div class="np-tabs">
-      <button data-np="chapters" class="on">Kapitel</button>
+      <button data-np="chapters" id="np-tab-chapters" class="on">Kapitel</button>
       <button data-np="queue">Als Nächstes</button>
       <button data-np="notes">Shownotes</button>
     </div>
@@ -69,6 +73,6 @@
 </section>
 
 <div id="toast" class="hidden"></div>
-<script src="app.js"></script>
+<script type="module" src="app.js"></script>
 </body>
 </html>

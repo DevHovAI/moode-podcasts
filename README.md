@@ -1,19 +1,28 @@
 # moode-podcasts
 
-A podcast and radio player page for the [moOde audio player](https://moodeaudio.org).
+A podcast, radio and music player page for the [moOde audio player](https://moodeaudio.org).
 
 It runs on the moOde device and serves a mobile-friendly web page on port 8090.
 The page is a remote control: it drives moOde's MPD, so sound comes out of
 your hi-fi, and every phone, tablet or PC sees the same state. moOde itself is
 not modified.
 
-- **Podcasts**: subscriptions, newest episodes of all of them, a page per podcast
+- **Start**: a home screen you assemble from blocks (continue listening, new
+  episodes, a podcast, favourite stations, a radio genre or language, recently
+  added music, a music genre or artist), shared by all devices
+- **Podcasts**: one tab with New, My podcasts (grouped by genre), Continue
+  listening and Discover, each a short preview with 'show all'
 - **Player**: seek bar, ±30 s, chapter list (tap to jump), shownotes,
   next/previous jump between chapters, a queue ("up next")
 - **Resume**: remembers where you stopped in every episode, shows progress and
   "played"
 - **Radio**: all of moOde's stations with their logos, favourites first,
-  search and filter by broadcaster
+  grouped by genre, language or broadcaster
+- **Music**: moOde's local library: artists (A–Z), albums, genres, recently
+  added; play or queue albums and tracks; covers come from moOde
+- **Search** across subscriptions, episodes, radio stations and music
+- **Themes**: six colour schemes, light/dark/automatic, any accent colour or
+  moOde's own
 - **Discover**: curated recommendations (German-language, mostly public
   broadcasters: ARD, Deutschlandfunk, ORF, SRF), search via the iTunes
   directory, paste any RSS feed
@@ -56,6 +65,7 @@ moOde's files are restored byte for byte.
 | program | `/opt/moode-podcasts` |
 | subscriptions and episode lists | `/var/lib/moode-podcasts/feeds.json` |
 | listening progress | `/var/lib/moode-podcasts/progress.json` |
+| theme and home screen (all devices) | `/var/lib/moode-podcasts/settings.json` |
 | resized cover images | `/var/lib/moode-podcasts/img/` |
 | services | `moode-podcasts-web.service`, `moode-podcasts-sync.timer` |
 
@@ -67,6 +77,9 @@ moOde's files are restored byte for byte.
   the newest episodes during the refresh, for older ones when first played.
 - **Radio stations** are read (never written) from moOde's station table; the
   logos are served by moOde itself.
+- **Music** comes from MPD's database (`list`/`find`/`search`); album covers
+  are served by moOde's `coverart.php`. Add music sources (NAS, USB) in moOde's
+  library settings as usual.
 - The services run as root but without any capabilities, inside a systemd
   sandbox with write access to `/var/lib/moode-podcasts` only, at low priority
   and limited to half a CPU core (a Raspberry Pi with a weak power supply can

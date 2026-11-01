@@ -26,6 +26,12 @@ requests, release notes — is English.
   `cfg_radio`. `deploy/cleanup_v02.py` removes what 0.1/0.2 changed; keep it
   idempotent and byte-exact.
 - MPD's queue is the queue: insert after the current song, never clear it.
+- MPD 0.24 filters have **no OR** and fold case only for ASCII: see
+  `library._find_artist` and the search variants; the fake MPD in
+  `tests/conftest.py` rejects OR like the real one.
+- The UI is plain ES modules in `static/` (no build step); `web.static_file`
+  serves only files that exist there. Settings (theme, home blocks) are shared
+  via `settings.json` and validated in `settings.clean`.
 - Resume: MPD answers "Not seekable" right after starting a stream, so
   `Player._seek_when_ready` retries. Far seeks are slow with moOde's `mad`
   decoder — never "fix" that by changing moOde's MPD config.

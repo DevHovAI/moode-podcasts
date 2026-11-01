@@ -63,3 +63,14 @@ def test_double_encoded_titles_are_decoded():
       <item><title>A &amp;amp; B</title><enclosure url="https://e.org/1.mp3"/></item></channel></rss>"""
     pod = parse_feed(data)
     assert (pod.title, pod.episodes[0].title) == ("Rock & Roll", "A & B")
+
+
+def test_categories_itunes_nested_and_plain():
+    data = b"""<rss xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd"><channel><title>X</title>
+      <itunes:category text="News"><itunes:category text="Politics"/></itunes:category>
+      <itunes:category text="Society &amp; Culture"/>
+      <itunes:category text="News"/>
+    </channel></rss>"""
+    assert parse_feed(data).categories == ["News", "Politics", "Society & Culture"]
+    plain = b"<rss><channel><title>X</title><category>Technology</category></channel></rss>"
+    assert parse_feed(plain).categories == ["Technology"]

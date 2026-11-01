@@ -96,6 +96,27 @@ class Library:
         return {"kind": "other", "url": url}
 
 
+def _song_info(song: dict) -> dict:
+    """Titel aus MPDs Tags; lokale Dateien heißen „song“ (Cover über moOdes coverart.php)."""
+    local = not song["file"].startswith(("http://", "https://"))
+    return {
+        "kind": "song" if local else "other",
+        "title": song.get("Title") or song.get("Name") or song["file"].rsplit("/", 1)[-1],
+        "artist": song.get("Artist", ""),
+        "album": song.get("Album", ""),
+    }
+
+
+def check_path(path: str) -> str:
+    """Adresse oder Pfad in MPDs Musikordner – nichts, was aus ihm herausführt."""
+    path = (path or "").strip()
+    if path.startswith(("http://", "https://")):
+        return path
+    if not path or path.startswith("/") or ".." in path.split("/") or "\n" in path:
+        raise ValueError(f"ungültiger Pfad: {path!r}")
+    return path
+
+
 def _status(m: Mpd) -> dict:
     return dict(m.command("status"))
 
@@ -140,10 +161,7 @@ class Player:
             info = self.library.describe(cur["file"])
             info["icy_title"] = cur.get("Title", "") if info["kind"] == "radio" else ""
             if info["kind"] == "other":
-                info["title"] = (
-                    cur.get("Title") or cur.get("Name") or cur["file"].rsplit("/", 1)[-1]
-                )
-                info["artist"] = cur.get("Artist", "")
+                info.update(_song_info(cur))
             if info["kind"] == "episode":
                 if not out["duration"] and info.get("duration"):
                     out["duration"] = float(info["duration"])
@@ -166,12 +184,14 @@ class Player:
 
     def _queue_entry(self, song: dict) -> dict:
         info = self.library.describe(song["file"])
+        if info["kind"] == "other":
+            info.update(_song_info(song))
         return {
             "id": song["Id"],
             "kind": info["kind"],
             "url": song["file"],
             "title": info.get("title") or info.get("name") or song.get("Title") or song["file"],
-            "subtitle": info.get("podcast") or info.get("broadcaster") or "",
+            "subtitle": info.get("podcast") or info.get("broadcaster") or info.get("artist") or "",
             "image": info.get("image") or info.get("podcast_image") or "",
             "name": info.get("name", ""),
         }
@@ -250,6 +270,17 @@ class Player:
     def enqueue(self, url: str) -> None:
         with self.lock, Mpd() as m:
             self._add(m, url, None)
+
+    def play_many(self, files: list[str], now: bool = True) -> None:
+        """Mehrere Titel (ein Album) nach dem laufenden einfügen bzw. hinten anhängen."""
+        if not files:
+            return
+        with self.lock, Mpd() as m:
+            st = _status(m)
+            pos = int(st["song"]) + 1 if now and "song" in st else None
+            ids = [self._add(m, f, None if pos is None else pos + i) for i, f in enumerate(files)]
+            if now:
+                m.command(f"playid {ids[0]}")
 
     def _resume_point(self, url: str) -> float:
         entry = self.progress.load().get(url, {})

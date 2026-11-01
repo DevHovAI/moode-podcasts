@@ -1,7 +1,4 @@
-import shlex
-import socketserver
 import threading
-from typing import ClassVar
 
 import pytest
 
@@ -13,111 +10,6 @@ from moode_podcasts.store import Progress, Store
 EP = "https://e.org/1.mp3"
 EP2 = "https://e.org/2.mp3"
 CHAPTERS = [[0.0, "Intro"], [100.0, "Thema"], [500.0, "Ende"]]
-
-
-class FakeMpd(socketserver.StreamRequestHandler):
-    """Ein MPD im Kleinen: Warteschlange, Status, Spulen (anfangs „Not seekable“)."""
-
-    queue: ClassVar[list[dict]] = []
-    st: ClassVar[dict] = {}
-    log: ClassVar[list[str]] = []
-    not_seekable: ClassVar[int] = 0
-    next_id: ClassVar[int] = 100
-
-    def ok(self, *lines):
-        for line in lines:
-            self.wfile.write(f"{line}\n".encode())
-        self.wfile.write(b"OK\n")
-
-    def ack(self, msg):
-        self.wfile.write(f"ACK [2@0] {{}} {msg}\n".encode())
-
-    def song_by_id(self, sid):
-        return next((s for s in self.queue if s["Id"] == sid), None)
-
-    def handle(self):
-        self.wfile.write(b"OK MPD 0.24.0\n")
-        for raw in self.rfile:
-            line = raw.decode().rstrip("\n")
-            self.log.append(line)
-            cmd, *args = shlex.split(line)
-            st = self.st
-            if cmd == "status":
-                cur = self.song_by_id(st.get("songid"))
-                extra = [f"song: {self.queue.index(cur)}", f"songid: {cur['Id']}"] if cur else []
-                self.ok(
-                    f"state: {st.get('state', 'stop')}",
-                    f"elapsed: {st.get('elapsed', 0)}",
-                    f"duration: {st.get('duration', 0)}",
-                    "volume: 60",
-                    *extra,
-                )
-            elif cmd == "playlistinfo":
-                out = []
-                for pos, s in enumerate(self.queue):
-                    out += [f"file: {s['file']}", f"Pos: {pos}"]
-                    out += [f"{k}: {v}" for k, v in s.items() if k != "file"]
-                self.ok(*out)
-            elif cmd == "addid":
-                FakeMpd.next_id += 1
-                sid = str(FakeMpd.next_id)
-                pos = int(args[1]) if len(args) > 1 else len(self.queue)
-                self.queue.insert(pos, {"file": args[0], "Id": sid})
-                self.ok(f"Id: {sid}")
-            elif cmd == "addtagid":
-                self.song_by_id(args[0])[args[1]] = args[2]
-                self.ok()
-            elif cmd == "playid":
-                st.update(songid=args[0], state="play", elapsed=0)
-                self.ok()
-            elif cmd in ("seekid", "seekcur"):
-                if FakeMpd.not_seekable > 0:
-                    FakeMpd.not_seekable -= 1
-                    self.ack("Not seekable")
-                    continue
-                target = args[-1]
-                if target[0] in "+-":
-                    st["elapsed"] = float(st.get("elapsed", 0)) + float(target)
-                else:
-                    st["elapsed"] = float(target)
-                self.ok()
-            elif cmd == "pause":
-                st["state"] = "pause" if args[0] == "1" else "play"
-                self.ok()
-            elif cmd in ("next", "previous", "stop", "play", "clearerror"):
-                if cmd == "stop":
-                    st.update(state="stop", elapsed=0)
-                self.ok()
-            elif cmd == "deleteid":
-                self.queue.remove(self.song_by_id(args[0]))
-                self.ok()
-            elif cmd == "moveid":
-                song = self.song_by_id(args[0])
-                self.queue.remove(song)
-                self.queue.insert(int(args[1]), song)
-                self.ok()
-            elif cmd == "setvol":
-                self.ok()
-            else:
-                self.ack("unknown command")
-
-
-@pytest.fixture
-def mpd(monkeypatch):
-    FakeMpd.queue = [
-        {"file": "OSDISK/a.flac", "Id": "1", "Title": "Song"},
-        {"file": "OSDISK/b.flac", "Id": "2", "Title": "Song 2"},
-    ]
-    FakeMpd.st = {"state": "play", "songid": "1", "elapsed": 10, "duration": 200}
-    FakeMpd.log = []
-    FakeMpd.not_seekable = 0
-    server = socketserver.ThreadingTCPServer(("127.0.0.1", 0), FakeMpd)
-    server.daemon_threads = True
-    threading.Thread(target=server.serve_forever, daemon=True).start()
-    monkeypatch.setenv("MOODE_PODCASTS_MPD_HOST", "127.0.0.1")
-    monkeypatch.setenv("MOODE_PODCASTS_MPD_PORT", str(server.server_address[1]))
-    yield FakeMpd
-    server.shutdown()
 
 
 @pytest.fixture
@@ -196,7 +88,7 @@ def test_snapshot_describes_episode_radio_and_queue(mpd, p):
     )
     assert "description" not in cur
     assert [(q["kind"], q["title"]) for q in snap["queue"]] == [
-        ("other", "Song 2"),
+        ("song", "Song 2"),
         ("radio", "WDR 5"),
     ]
 
@@ -302,3 +194,20 @@ def test_monitor_publishes_and_saves(mpd, p, monkeypatch):
     p.monitor(stop)
     assert got[0]["current"]["url"] == EP
     assert p.progress.load()[EP]["pos"] == 42
+
+
+def test_local_songs_and_albums(mpd, p):
+    from moode_podcasts.player import check_path
+
+    p.play_many(["NAS/A/Album 1/01.flac", "NAS/A/Album 1/02.flac"])
+    files = [s["file"] for s in mpd.queue]
+    assert files[1:3] == ["NAS/A/Album 1/01.flac", "NAS/A/Album 1/02.flac"]
+    assert mpd.st["songid"] == mpd.queue[1]["Id"]
+    mpd.queue[1].update(Title="Eins", Artist="Anna", Album="Album 1")
+    with Mpd() as m:
+        cur = p.snapshot(m)["current"]
+    assert (cur["kind"], cur["title"], cur["artist"]) == ("song", "Eins", "Anna")
+    for bad in ("/etc/passwd", "NAS/../../etc", "", "a\nb"):
+        with pytest.raises(ValueError):
+            check_path(bad)
+    assert check_path("NAS/A/x.flac") == "NAS/A/x.flac"

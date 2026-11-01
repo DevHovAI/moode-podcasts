@@ -30,6 +30,7 @@ class Podcast:
     image: str = ""
     description: str = ""
     episodes: list[Episode] = field(default_factory=list)
+    categories: list[str] = field(default_factory=list)  # iTunes-Kategorien, Hauptkategorie zuerst
 
 
 def _date(text: str | None) -> datetime | None:
@@ -129,6 +130,19 @@ def _itunes_image(el) -> str:
     return ""
 
 
+def _categories(chan) -> list[str]:
+    """itunes:category (text-Attribut, auch verschachtelt), sonst einfache RSS-<category>."""
+    out: list[str] = []
+    for c in chan:
+        if local(c.tag) != "category":
+            continue
+        names = [c.get("text")] + [s.get("text") for s in c if local(s.tag) == "category"]
+        if not c.get("text") and (c.text or "").strip():
+            names = [c.text.strip()]
+        out += [n.strip() for n in names if n and n.strip() and n.strip() not in out]
+    return out
+
+
 def _image(chan) -> str:
     if href := _itunes_image(chan):
         return href
@@ -155,6 +169,7 @@ def parse_feed(data: bytes) -> Podcast:
     pod = Podcast(
         title=_clean(_text(chan, "title")) or "Podcast",
         image=_image(chan),
+        categories=_categories(chan),
         description=_clean(
             _text(chan, "summary") or _text(chan, "description") or _text(chan, "subtitle")
         ),

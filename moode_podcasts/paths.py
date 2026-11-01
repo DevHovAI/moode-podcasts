@@ -21,3 +21,8 @@ def mpd_address() -> tuple[str, int]:
     return os.environ.get("MOODE_PODCASTS_MPD_HOST", "localhost"), int(
         os.environ.get("MOODE_PODCASTS_MPD_PORT", "6600")
     )
+
+
+def moode_www() -> Path:
+    """moOdes Webverzeichnis – nur gelesen (Farbzuordnung der Akzentfarben)."""
+    return Path(os.environ.get("MOODE_PODCASTS_WWW", "/var/www"))

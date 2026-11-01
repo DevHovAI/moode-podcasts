@@ -11,17 +11,18 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib import resources
 
-from moode_podcasts import images, net, opml, radio, sync
-from moode_podcasts.player import Player
+from moode_podcasts import images, library, net, opml, radio, settings, sync
+from moode_podcasts.mpd import Mpd
+from moode_podcasts.player import Player, check_path
 from moode_podcasts.store import Progress, Store, find
 
 log = logging.getLogger(__name__)
 
 MAX_BODY = 2_000_000
-STATIC = {
-    "/": ("index.html", "text/html; charset=utf-8"),
-    "/app.js": ("app.js", "text/javascript; charset=utf-8"),
-    "/app.css": ("app.css", "text/css; charset=utf-8"),
+TYPES = {
+    ".html": "text/html; charset=utf-8",
+    ".js": "text/javascript; charset=utf-8",
+    ".css": "text/css; charset=utf-8",
 }
 _sync_lock = threading.Lock()
 
@@ -92,6 +93,65 @@ def podcast(store: Store, progress: Progress, url: str) -> dict | None:
     if not sub:
         return None
     return dict(sub, episodes=_with_progress(sub.get("episodes", []), progress.load(), sub))
+
+
+def static_file(route: str) -> tuple[bytes, str] | None:
+    """Dateien aus static/ – nur, was dort wirklich liegt (kein Pfad nach draußen)."""
+    name = "index.html" if route == "/" else route.lstrip("/")
+    if "/" in name or name.startswith("."):
+        return None
+    ext = "." + name.rsplit(".", 1)[-1]
+    path = resources.files("moode_podcasts").joinpath("static", name)
+    if ext not in TYPES or not path.is_file():
+        return None
+    return path.read_bytes(), TYPES[ext]
+
+
+def continue_listening(store: Store, progress: Progress, limit: int = 50) -> list[dict]:
+    """Angefangene, nicht fertig gehörte Folgen – zuletzt gehörte zuerst."""
+    prog = progress.load()
+    eps = [
+        e
+        for sub in store.load()
+        for e in _with_progress(sub.get("episodes", []), prog, sub)
+        if e["progress"].get("pos", 0) > 0 and not e["progress"].get("played")
+    ]
+    eps.sort(key=lambda e: -e["progress"].get("updated", 0))
+    return eps[:limit]
+
+
+def find_all(store: Store, q: str, per_group: int = 8) -> dict:
+    """Globale Suche: Abos, Folgen, Radiosender, lokale Musik."""
+    low = q.casefold().strip()
+    out: dict = {"podcasts": [], "episodes": [], "radio": [], "music": {}}
+    if not low:
+        return out
+    for sub in store.load():
+        title = sub.get("title") or sub.get("feed_title") or ""
+        if low in title.casefold() or low in " ".join(sub.get("categories", [])).casefold():
+            out["podcasts"].append({k: v for k, v in sub.items() if k != "episodes"})
+        for ep in sub.get("episodes", []):
+            if low in ep["title"].casefold():
+                out["episodes"].append(
+                    dict(
+                        {k: v for k, v in ep.items() if k != "description"},
+                        podcast=title,
+                        podcast_image=sub.get("image", ""),
+                        progress={},
+                    )
+                )
+    out["episodes"].sort(key=lambda e: -(e.get("published") or 0))
+    for s in radio.stations():
+        if low in radio.search_text(s):
+            out["radio"].append(s)
+    try:
+        with Mpd(timeout=10) as m:
+            out["music"] = library.search(m, q, limit=60)
+    except Exception as exc:  # ohne MPD bleibt die Musik eben leer
+        log.info("Musiksuche: %s", exc)
+    for key in ("podcasts", "episodes", "radio"):
+        out[key] = out[key][: per_group * 4]
+    return out
 
 
 def episode(store: Store, url: str) -> dict | None:
@@ -167,10 +227,18 @@ class Handler(BaseHTTPRequestHandler):
             self._error(exc, HTTPStatus.BAD_GATEWAY)
 
     def _get(self, route: str, q: dict) -> None:
-        if route in STATIC:
-            name, ctype = STATIC[route]
-            body = resources.files("moode_podcasts").joinpath(f"static/{name}").read_bytes()
-            self._send(HTTPStatus.OK, body, ctype)
+        if not route.startswith(("/api/", "/img")) and (found := static_file(route)):
+            self._send(HTTPStatus.OK, *found)
+        elif route.startswith("/api/library/"):
+            self._library(route.removeprefix("/api/library/"), q)
+        elif route == "/api/settings":
+            self._json(settings.load())
+        elif route == "/api/moode-accent":
+            self._json({"accent": settings.moode_accent()})
+        elif route == "/api/continue":
+            self._json(continue_listening(self.store, self.progress))
+        elif route == "/api/find":
+            self._json(find_all(self.store, q.get("q", "")))
         elif route == "/api/events":
             self._events()
         elif route == "/api/state":
@@ -209,6 +277,44 @@ class Handler(BaseHTTPRequestHandler):
             self._image(q.get("u", ""), int(q.get("s", "160") or 160))
         else:
             self._error("nicht gefunden", HTTPStatus.NOT_FOUND)
+
+    def _library(self, what: str, q: dict) -> None:
+        with Mpd(timeout=20) as m:
+            if what == "artists":
+                data = library.artists(m)
+            elif what == "albums":
+                data = library.albums(m, q.get("artist", ""))
+            elif what == "album":
+                data = library.album_tracks(m, q.get("artist", ""), q.get("album", ""))
+            elif what == "all-albums":
+                data = library.all_albums(m)
+            elif what == "genres":
+                data = library.genres(m)
+            elif what == "genre":
+                data = library.genre_albums(m, q.get("name", ""))
+            elif what == "recent":
+                data = library.recently_added(m, int(q.get("limit", "12") or 12))
+            elif what == "stats":
+                data = library.stats(m)
+            elif what == "cover":
+                # moOde sucht das Cover (eingebettet oder Ordnerbild) – wir nennen nur die Datei
+                file = library.cover_file(m, q.get("artist", ""), q.get("album", ""))
+                host = self.headers.get("Host", "").split(":")[0] or "localhost"
+                target = (
+                    f"http://{host}/coverart.php/{urllib.parse.quote(file)}"
+                    if file
+                    else f"http://{host}/images/default-album-cover.jpg"
+                )
+                self.send_response(HTTPStatus.FOUND)
+                self.send_header("Location", target)
+                self.send_header("Cache-Control", "max-age=86400")
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return
+            else:
+                self._error("nicht gefunden", HTTPStatus.NOT_FOUND)
+                return
+        self._json(data)
 
     def _image(self, url: str, size: int) -> None:
         data = images.cached(net.check_url(url), size)
@@ -268,6 +374,8 @@ class Handler(BaseHTTPRequestHandler):
             elif route == "/api/player":
                 self._player(req)
                 self._json({"ok": True})
+            elif route == "/api/settings":
+                self._json(settings.save(req))
             elif route == "/api/progress":
                 self.player.mark(req["url"], bool(req.get("played")))
                 self._json({"ok": True})
@@ -283,12 +391,18 @@ class Handler(BaseHTTPRequestHandler):
         if action in simple:
             simple[action]()
         elif action in ("play", "enqueue"):
-            url = net.check_url(req.get("url", ""))
-            # Kapitel älterer Folgen erst jetzt suchen, im Hintergrund
-            threading.Thread(
-                target=sync.ensure_chapters, args=(self.store, url), daemon=True
-            ).start()
+            url = check_path(req.get("url", ""))
+            if url.startswith("http"):
+                net.check_url(url)
+                # Kapitel älterer Folgen erst jetzt suchen, im Hintergrund
+                threading.Thread(
+                    target=sync.ensure_chapters, args=(self.store, url), daemon=True
+                ).start()
             p.play(url) if action == "play" else p.enqueue(url)
+        elif action == "album":
+            with Mpd(timeout=20) as m:
+                tracks = library.album_tracks(m, req.get("artist", ""), req.get("album", ""))
+            p.play_many([t["file"] for t in tracks], now=bool(req.get("now", True)))
         elif action == "seek":
             p.seek(float(req["position"]))
         elif action == "skip":
