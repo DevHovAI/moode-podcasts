@@ -17,6 +17,9 @@ that you could not do before. They are not a copy of the commit subjects.
 - Mark radio stations as favourites and edit their stream address, website,
   genre, broadcaster, language and country: ⋯ on a station tile or in the
   player. moOde saves the change itself, as if made in its station editor.
+- Podcast search also covers the ARD Audiothek. A podcast found in both
+  places is shown once. ARD shows that have no RSS feed of their own can be
+  subscribed as well.
 
 ## [0.5.1] - 2026-11-01
 
