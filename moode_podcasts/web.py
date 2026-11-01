@@ -10,7 +10,7 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib import resources
 
-from moode_podcasts import net, opml, sync
+from moode_podcasts import mpdwatch, net, opml, sync
 from moode_podcasts.store import Store
 
 log = logging.getLogger(__name__)
@@ -167,6 +167,7 @@ class Handler(BaseHTTPRequestHandler):
 
 def serve(host: str = "0.0.0.0", port: int = 8090, store: Store | None = None) -> None:
     Handler.store = store or Store()
+    mpdwatch.start(Handler.store)
     httpd = ThreadingHTTPServer((host, port), Handler)
     log.info("moode-podcasts läuft auf http://%s:%d", host, port)
     httpd.serve_forever()

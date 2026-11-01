@@ -28,6 +28,15 @@ requests, release notes — is English.
   releases before changing the playlist format.
 - **Never touch playlists we did not create** — names of our own are kept in
   `feeds.json`.
+- Episodes are registered in moOde's `cfg_radio` with **type `p`** (hidden from
+  the Radio view by `renderRadioView`). Only rows whose URL is in our
+  `episode_list` are touched; the sync resets the type because moOde's
+  "Hide/Un-hide all" rewrites it. Logo file name = station name, so episode
+  names must stay stable once assigned.
+- moOde's PHP session must be reloaded after `cfg_radio` changes; that runs as
+  www-data via `moode-podcasts-reload.path` (`deploy/reload-session.php`).
+- Keep image work cheap (`images.square_jpegs` decodes once with `draft`):
+  a Pi with a weak power supply resets under sustained full load.
 - `paths.py` reads the environment on every call so tests can redirect it;
   do not turn the paths into module constants.
 - Write requests need the `X-Moode-Podcasts: 1` header (cheap CSRF guard).

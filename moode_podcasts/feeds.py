@@ -14,6 +14,7 @@ class Episode:
     title: str
     url: str
     published: datetime | None = None
+    image: str = ""
 
 
 @dataclass
@@ -55,11 +56,16 @@ def _clean(s: str) -> str:
     return " ".join(s.split())
 
 
-def _image(chan) -> str:
-    for c in chan:
-        tag = local(c.tag)
-        if tag == "image" and c.get("href"):  # itunes:image
+def _itunes_image(el) -> str:
+    for c in el:
+        if local(c.tag) == "image" and c.get("href"):  # itunes:image
             return c.get("href").strip()
+    return ""
+
+
+def _image(chan) -> str:
+    if href := _itunes_image(chan):
+        return href
     img = _child(chan, "image")
     if img is not None:
         return _text(img, "url")
@@ -100,9 +106,8 @@ def parse_feed(data: bytes) -> Podcast:
         if not url.startswith(("http://", "https://")):
             continue
         published = next((d for t in date_tags if (d := _date(_text(it, t)))), None)
-        pod.episodes.append(
-            Episode(_clean(_text(it, "title")) or "Episode", url.strip(), published)
-        )
+        title = _clean(_text(it, "title")) or "Episode"
+        pod.episodes.append(Episode(title, url.strip(), published, _itunes_image(it)))
 
     # Neueste zuerst; Folgen ohne Datum behalten ihre Feed-Reihenfolge am Ende
     oldest = datetime.min.replace(tzinfo=UTC)
