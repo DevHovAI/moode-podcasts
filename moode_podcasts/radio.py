@@ -38,6 +38,12 @@ def search_text(s: dict) -> str:
     return " ".join(words).casefold()
 
 
+def _web_link(value: str | None) -> str:
+    """Nur echte Webadressen – das Feld landet als Link in der Seite."""
+    value = (value or "").strip()
+    return value if value.lower().startswith(("https://", "http://")) else ""
+
+
 def stations() -> list[dict]:
     db_path = paths.moode_db()
     if not db_path.exists():
@@ -45,7 +51,8 @@ def stations() -> list[dict]:
     uri = f"file:{db_path}?mode=ro"
     with sqlite3.connect(uri, uri=True, timeout=10) as db:
         rows = db.execute(
-            "SELECT name, station, type, genre, broadcaster, country, language, bitrate, format "
+            "SELECT name, station, type, genre, broadcaster, country, language, bitrate, format, "
+            "home_page "
             "FROM cfg_radio WHERE type IN (?, ?, ?) AND station NOT IN ('DELETED', 'OFFLINE')",
             SHOWN,
         ).fetchall()
@@ -62,7 +69,8 @@ def stations() -> list[dict]:
             "country": country or "",
             "bitrate": bitrate or "",
             "format": fmt or "",
+            "home_page": _web_link(home),
         }
-        for name, url, kind, genre, broadcaster, country, language, bitrate, fmt in rows
+        for name, url, kind, genre, broadcaster, country, language, bitrate, fmt, home in rows
     ]
     return sorted(out, key=lambda s: (not s["favorite"], s["name"].lower()))

@@ -111,8 +111,16 @@ function renderQueue(S) {
     </div>`).join("") : `<p class="muted small">Die Warteschlange ist leer. Mit ＋ kommt etwas hierher.</p>`;
 }
 
+// Radio hat keine Shownotes; was gerade läuft, steht schon oben im Player
+function stationNotes(st) {
+  if (!st.home_page) return "Keine Website hinterlegt.";
+  const host = st.home_page.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  return `Website des Senders: <a href="${esc(st.home_page)}" target="_blank" rel="noopener">${esc(host)}</a>`;
+}
+
 async function loadNotes() {
   const c = live.S && live.S.current;
+  if (c && c.kind === "radio") { $("#np-notes").innerHTML = stationNotes(c); return; }
   if (!c || c.kind !== "episode") { $("#np-notes").textContent = "Keine Shownotes."; return; }
   const ep = await api("/api/episode?url=" + encodeURIComponent(c.url)).catch(() => null);
   $("#np-notes").textContent = (ep && ep.description) || "Keine Shownotes.";
