@@ -15,6 +15,8 @@ def test_rss_newest_first_and_skips_items_without_audio(rss):
     ]
     # Zeilenumbrüche aus dem Titel sind weg, sonst zerreißt die m3u
     assert pod.episodes[0].title == "Newest, with a comma"
+    # eigenes Folgenbild nur, wo der Feed eins nennt
+    assert [e.image for e in pod.episodes] == ["", "https://example.org/ep1.png"]
 
 
 def test_atom_feed_with_enclosure_links():

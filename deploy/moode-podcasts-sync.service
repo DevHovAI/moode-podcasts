@@ -8,12 +8,12 @@ Environment=PYTHONPATH=/opt/moode-podcasts
 ExecStart=/usr/bin/python3 -m moode_podcasts sync
 Type=oneshot
 # Läuft als root, damit die Dateien wie moOdes eigene root gehören – aber ohne
-# jede Sonderfähigkeit und mit Schreibrecht nur in diesen drei Ordnern.
+# jede Sonderfähigkeit und mit Schreibrecht nur in diesen Ordnern.
 CapabilityBoundingSet=
 AmbientCapabilities=
 NoNewPrivileges=yes
 ProtectSystem=strict
-ReadWritePaths=/var/lib/moode-podcasts /var/lib/mpd/playlists /var/local/www/imagesw/playlist-covers
+ReadWritePaths=/var/lib/moode-podcasts /var/lib/mpd/playlists /var/local/www/imagesw/playlist-covers /var/local/www/imagesw/radio-logos /var/local/www/db
 ProtectHome=yes
 PrivateTmp=yes
 PrivateDevices=yes
@@ -23,4 +23,8 @@ ProtectControlGroups=yes
 RestrictSUIDSGID=yes
 RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
 MemoryMax=150M
+# sanft bleiben: der Pi spielt nebenbei Musik und hat oft ein knappes Netzteil
+Nice=15
+CPUQuota=50%
+IOSchedulingClass=idle
 

@@ -20,12 +20,12 @@ def test_safe_name_strips_troublesome_characters():
     assert len(playlist.safe_name("x" * 200)) == 80
 
 
-def test_unique_name_leaves_foreign_playlists_alone(dirs):
-    (dirs["playlists"] / "Favorites.m3u").write_text("mine, not yours")
-    assert playlist.unique_name("Favorites", own=set()) == "Favorites (Podcast)"
+def test_unique_name_is_prefixed_and_leaves_foreign_playlists_alone(dirs):
+    assert playlist.unique_name("Cast", own=set()) == "Podcast · Cast"
+    (dirs["playlists"] / "Podcast · Cast.m3u").write_text("someone else's")
+    assert playlist.unique_name("Cast", own=set()) == "Podcast · Cast (2)"
     # eine eigene Liste gleichen Namens darf weiterverwendet werden
-    (dirs["playlists"] / "Cast.m3u").write_text("")
-    assert playlist.unique_name("Cast", own={"Cast"}) == "Cast"
+    assert playlist.unique_name("Cast", own={"Podcast · Cast"}) == "Podcast · Cast"
 
 
 def test_write_cover_converts_to_square_jpeg(dirs):

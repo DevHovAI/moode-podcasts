@@ -48,7 +48,8 @@ sudo sh deploy/uninstall.sh
 | subscriptions | `/var/lib/moode-podcasts/feeds.json` |
 | playlists | `/var/lib/mpd/playlists/<Podcast>.m3u` |
 | covers | `/var/local/www/imagesw/playlist-covers/<Podcast>.jpg` |
-| services | `moode-podcasts-web.service`, `moode-podcasts-sync.timer` |
+| episode names and covers | `cfg_radio` rows with type `p`, `/var/local/www/imagesw/radio-logos/` |
+| services | `moode-podcasts-web.service`, `moode-podcasts-sync.timer`, `moode-podcasts-reload.path` |
 
 A playlist looks like this; moOde shows the `#EXTINF` text as the episode
 title:
@@ -61,11 +62,24 @@ https://example.org/episode.mp3
 ```
 
 Playlists that were not created by moode-podcasts are never touched; on a
-name clash the podcast gets a `(Podcast)` suffix.
+name clash a number is appended.
+
+moOde only knows names and logos of stream URLs from its station table
+`cfg_radio`. So every current episode also gets a row there, with type `p`,
+which moOde's Radio view does not display — the same trick moOde's own radio
+browser uses for streams it plays. That gives the play queue the episode name
+and the player the episode cover. A small watcher additionally sets the
+`Title`, `Artist` and `Album` tags of queued episodes in MPD (`addtagid`), and
+a path unit reloads moOde's PHP session as `www-data` whenever the station
+table changed. Rows of episodes that drop out of the newest ones are removed
+again (unless they are still queued).
+
+To find podcasts in moOde, use the filter field of the **Playlists** view:
+moOde's search only covers the local music library.
 
 The services run as root so the files belong to root like moOde's own, but
-inside a systemd sandbox without any capabilities and with write access to the
-three directories above only.
+inside a systemd sandbox without any capabilities, at low priority, limited to
+half a CPU core, and with write access to the directories above only.
 
 Command line, on the device:
 
@@ -80,6 +94,7 @@ sudo python3 -m moode_podcasts sync
 
 moOde treats episodes like radio streams:
 
+- while playing, the second line reads "Radio station" (fixed in moOde)
 - no resume position, no "played" marker
 - seeking only works if the podcast host supports HTTP range requests (most do)
 - the web page has no login, like moOde itself — keep it in your home network

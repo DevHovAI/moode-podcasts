@@ -10,6 +10,20 @@ that you could not do before. They are not a copy of the commit subjects.
 
 ## [Unreleased]
 
+### Fixed
+
+- Episodes show their title instead of the raw link in the play queue, have
+  their own cover, and the player shows episode title, podcast name and cover
+  while playing (#2).
+- Image processing uses a fraction of the CPU it did; a Raspberry Pi with a
+  weak power supply could reset during the first refresh.
+
+### Changed
+
+- Podcast playlists are named "Podcast · <name>", so moOde's playlist filter
+  finds all of them with "Podcast". Existing playlists are renamed on the next
+  refresh.
+
 ### Added
 
 - Subscribe to podcasts on a moOde player; each podcast appears as a playlist

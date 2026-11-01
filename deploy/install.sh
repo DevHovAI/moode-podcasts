@@ -9,6 +9,7 @@ src="$(cd "$(dirname "$0")/.." && pwd)"
 rm -rf /opt/moode-podcasts.new
 mkdir -p /opt/moode-podcasts.new
 cp -r "$src/moode_podcasts" /opt/moode-podcasts.new/
+cp "$src/deploy/reload-session.php" /opt/moode-podcasts.new/
 find /opt/moode-podcasts.new -name __pycache__ -prune -exec rm -rf {} +
 rm -rf /opt/moode-podcasts
 mv /opt/moode-podcasts.new /opt/moode-podcasts
@@ -16,10 +17,14 @@ mv /opt/moode-podcasts.new /opt/moode-podcasts
 mkdir -p /var/lib/moode-podcasts /var/local/www/imagesw/playlist-covers
 install -m 644 "$src"/deploy/moode-podcasts-web.service \
                "$src"/deploy/moode-podcasts-sync.service \
-               "$src"/deploy/moode-podcasts-sync.timer /etc/systemd/system/
+               "$src"/deploy/moode-podcasts-sync.timer \
+               "$src"/deploy/moode-podcasts-reload.path \
+               "$src"/deploy/moode-podcasts-reload.service /etc/systemd/system/
 systemctl daemon-reload
-systemctl enable --now moode-podcasts-sync.timer
+systemctl enable --now moode-podcasts-reload.path moode-podcasts-sync.timer
 systemctl enable moode-podcasts-web.service
 systemctl restart moode-podcasts-web.service
+# Folgen sofort mit Namen und Bildern eintragen statt erst beim nächsten Timer
+systemctl start --no-block moode-podcasts-sync.service
 
 echo "fertig: http://$(hostname).local:8090"

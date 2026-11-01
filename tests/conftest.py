@@ -17,16 +17,52 @@ def no_network(monkeypatch):
     monkeypatch.setattr(urllib.request, "urlopen", forbidden)
 
 
+# Schema wie in moOdes moode-sqlite3.db
+CFG_RADIO = """CREATE TABLE cfg_radio (id INTEGER PRIMARY KEY, station CHAR (128), name CHAR (128),
+    type CHAR (1), logo CHAR (128), genre CHAR (32), broadcaster CHAR (32), language CHAR (32),
+    country CHAR (32), region CHAR (32), bitrate CHAR (32), format CHAR (32), geo_fenced CHAR (3),
+    home_page CHAR (32), monitor CHAR (32))"""
+
+
 @pytest.fixture
 def dirs(tmp_path, monkeypatch):
-    """Daten-, Playlist- und Cover-Ordner im tmp_path; paths liest die Umgebung bei jedem Aufruf."""
-    d = {name: tmp_path / name for name in ("data", "playlists", "covers")}
+    """Alle Pfade im tmp_path plus eine cfg_radio; paths liest die Umgebung bei jedem Aufruf."""
+    import sqlite3
+
+    from moode_podcasts import mpd
+
+    d = {name: tmp_path / name for name in ("data", "playlists", "covers", "logos")}
     for p in d.values():
         p.mkdir()
+    d["db"] = tmp_path / "moode.db"
+    with sqlite3.connect(d["db"]) as db:
+        db.execute(CFG_RADIO)
+        db.execute(
+            "INSERT INTO cfg_radio (id, station, name, type) VALUES (1, 'http://r', 'Radio', 'r')"
+        )
     monkeypatch.setenv("MOODE_PODCASTS_DATA", str(d["data"]))
     monkeypatch.setenv("MOODE_PODCASTS_PLAYLISTS", str(d["playlists"]))
     monkeypatch.setenv("MOODE_PODCASTS_COVERS", str(d["covers"]))
+    monkeypatch.setenv("MOODE_PODCASTS_LOGOS", str(d["logos"]))
+    monkeypatch.setenv("MOODE_PODCASTS_DB", str(d["db"]))
+    # Kein echter MPD: Warteschlange ist leer, außer ein Test setzt etwas
+    d["queue"] = set()
+    monkeypatch.setattr(mpd, "queued_files", lambda: set(d["queue"]))
     return d
+
+
+@pytest.fixture
+def rows(dirs):
+    """rows(where) -> [(station, name, type)] aus der Test-cfg_radio."""
+    import sqlite3
+
+    def query(where="1=1"):
+        with sqlite3.connect(dirs["db"]) as db:
+            return db.execute(
+                f"SELECT station, name, type FROM cfg_radio WHERE {where} ORDER BY id"
+            ).fetchall()
+
+    return query
 
 
 RSS = b"""<?xml version="1.0" encoding="UTF-8"?>
@@ -38,6 +74,7 @@ RSS = b"""<?xml version="1.0" encoding="UTF-8"?>
   <itunes:image href="https://example.org/cover.png"/>
   <item>
     <title>Older episode</title>
+    <itunes:image href="https://example.org/ep1.png"/>
     <pubDate>Mon, 01 Sep 2025 06:00:00 +0200</pubDate>
     <enclosure url="https://example.org/1.mp3" type="audio/mpeg" length="1"/>
   </item>

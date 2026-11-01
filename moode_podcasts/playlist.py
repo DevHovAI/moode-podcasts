@@ -7,32 +7,33 @@ moOde liest in /var/www/command/playlist.php (getPlaylistContents) diese Zeilen:
 
 from __future__ import annotations
 
-import io
-import os
 import re
-from pathlib import Path
 
 from moode_podcasts import paths
 from moode_podcasts.feeds import Podcast
+from moode_podcasts.images import atomic_write, square_jpeg
 
 GENRE = "Podcast"
 COVER_SIZE = 600
+# Vorangestellt, damit das Filterfeld der Playlist-Ansicht alle Podcasts mit
+# „Podcast“ findet und moOde sie beim Sortieren zusammenhält
+PREFIX = "Podcast · "
 
 
-def safe_name(title: str) -> str:
+def safe_name(title: str, limit: int = 80) -> str:
     # Zeichen, die in Dateinamen, moOdes Shell-Aufrufen oder seinem JS stören
     name = re.sub(r"[/\\\"'`?*<>|:;$\x00-\x1f]", " ", title)
     name = " ".join(name.split()).strip(" .")
-    return name[:80] or "Podcast"
+    return name[:limit].rstrip(" .") or "Podcast"
 
 
 def unique_name(title: str, own: set[str]) -> str:
     """Freier Listenname; fremde Listen gleichen Namens bleiben unberührt."""
-    base = safe_name(title)
+    base = PREFIX + safe_name(title)
     name, n = base, 1
     while name not in own and (paths.playlist_dir() / f"{name}.m3u").exists():
         n += 1
-        name = f"{base} (Podcast)" if n == 2 else f"{base} (Podcast {n})"
+        name = f"{base} ({n})"
     return name
 
 
@@ -44,39 +45,16 @@ def render(pod: Podcast, limit: int) -> str:
     return "\n".join(lines) + "\n"
 
 
-def _atomic(path: Path, data: bytes) -> None:
-    tmp = path.with_name(f".{path.name}.tmp")
-    tmp.write_bytes(data)
-    # wie moOdes eigene Listen: auch die Weboberfläche (www-data) darf löschen
-    os.chmod(tmp, 0o666)
-    os.replace(tmp, path)
-
-
 def write(name: str, content: str) -> None:
-    _atomic(paths.playlist_dir() / f"{name}.m3u", content.encode())
+    atomic_write(paths.playlist_dir() / f"{name}.m3u", content.encode())
 
 
 def write_cover(name: str, raw: bytes) -> bool:
-    """Cover als quadratisches JPEG ablegen. Ohne Pillow nur, wenn es schon JPEG ist."""
-    try:
-        from PIL import Image
-    except ImportError:
-        if raw[:3] != b"\xff\xd8\xff":
-            return False
-        _atomic(paths.cover_dir() / f"{name}.jpg", raw)
-        return True
-    try:
-        im = Image.open(io.BytesIO(raw)).convert("RGBA")
-    except Exception:
+    """Cover als quadratisches JPEG ablegen."""
+    jpeg = square_jpeg(raw, COVER_SIZE)
+    if jpeg is None:
         return False
-    bg = Image.new("RGBA", im.size, (255, 255, 255, 255))
-    im = Image.alpha_composite(bg, im).convert("RGB")
-    im.thumbnail((COVER_SIZE, COVER_SIZE))
-    out = Image.new("RGB", (COVER_SIZE, COVER_SIZE), (255, 255, 255))
-    out.paste(im, ((COVER_SIZE - im.width) // 2, (COVER_SIZE - im.height) // 2))
-    buf = io.BytesIO()
-    out.save(buf, "JPEG", quality=88)
-    _atomic(paths.cover_dir() / f"{name}.jpg", buf.getvalue())
+    atomic_write(paths.cover_dir() / f"{name}.jpg", jpeg)
     return True
 
 
