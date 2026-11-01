@@ -1,3 +1,5 @@
+import pytest
+
 from moode_podcasts import radio
 
 
@@ -46,3 +48,81 @@ def test_search_text_knows_german_terms(dirs):
     }
     text = radio.search_text(s)
     assert "nachrichten" in text and "deutsch" in text and "wdr" in text
+
+
+@pytest.fixture
+def moode(dirs, monkeypatch):
+    """moOdes command/radio.php als Attrappe: schreibt wie moOde in cfg_radio."""
+    import sqlite3
+
+    sent = []
+
+    def send(form):
+        sent.append(form)
+        cols = [c for c in radio.COLUMNS if c not in ("id", "station")]
+        with sqlite3.connect(dirs["db"]) as db:
+            sets = ", ".join(f"{c} = ?" for c in cols)
+            db.execute(
+                f"UPDATE cfg_radio SET station = ?, {sets} WHERE id = ?",
+                (form["url"], *(form[c] for c in cols), form["id"]),
+            )
+        return "OK"
+
+    monkeypatch.setattr(radio, "_send", send)
+    return sent
+
+
+def test_favorite_on_and_off(moode):
+    assert radio.update("http://r/wdr5", favorite=True)["favorite"] is True
+    assert moode[-1]["type"] == "f" and moode[-1]["name"] == "WDR 5"
+    assert radio.update("http://r/wdr5", favorite=False)["favorite"] is False
+    assert moode[-1]["type"] == "r"
+
+
+def test_edit_fields_keeps_the_rest(moode):
+    st = radio.update(
+        "http://r/wdr5",
+        changes={
+            "url": "https://r/wdr5-neu",
+            "genre": "News, Talk",
+            "home_page": "https://wdr5.de",
+        },
+    )
+    assert (st["url"], st["genres"], st["home_page"]) == (
+        "https://r/wdr5-neu",
+        ["News", "Talk"],
+        "https://wdr5.de",
+    )
+    assert moode[-1]["broadcaster"] == "WDR" and "station" not in moode[-1]
+
+
+def test_unchanged_sends_nothing(moode):
+    radio.update("http://r/fm4", favorite=True)
+    assert moode == []
+
+
+@pytest.mark.parametrize(
+    ("changes", "msg"),
+    [
+        ({"name": "Neu"}, "nicht ändern"),
+        ({"genre": "Rock'n'Roll"}, "Anführungszeichen"),
+        ({"url": "ftp://x"}, "Stream-Adresse"),
+        ({"home_page": "javascript:alert(1)"}, "Website"),
+    ],
+)
+def test_rejects_bad_input(moode, changes, msg):
+    with pytest.raises(ValueError, match=msg):
+        radio.update("http://r/wdr5", changes=changes)
+    assert moode == []
+
+
+def test_unknown_or_hidden_station(moode):
+    for url in ("http://r/nope", "http://r/hidden"):
+        with pytest.raises(LookupError):
+            radio.update(url, favorite=True)
+
+
+def test_moode_refuses(dirs, monkeypatch):
+    monkeypatch.setattr(radio, "_send", lambda form: "A station with same URL already exists")
+    with pytest.raises(ValueError, match="same URL"):
+        radio.update("http://r/wdr5", changes={"url": "http://r/fm4"})

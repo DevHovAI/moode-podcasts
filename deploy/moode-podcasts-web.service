@@ -8,7 +8,7 @@ Environment=PYTHONPATH=/opt/moode-podcasts
 ExecStart=/usr/bin/python3 -m moode_podcasts serve --port 8090
 Restart=on-failure
 # Läuft als root, aber ohne jede Sonderfähigkeit und mit Schreibrecht nur in
-# seinem Datenordner; moOdes Datenbank wird nur gelesen (Radiosender).
+# seinem Datenordner; moOdes Datenbank wird nur gelesen (Sender ändert moOde selbst).
 CapabilityBoundingSet=
 AmbientCapabilities=
 NoNewPrivileges=yes

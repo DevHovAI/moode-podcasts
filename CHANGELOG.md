@@ -14,6 +14,9 @@ that you could not do before. They are not a copy of the commit subjects.
 
 - Radio stations show a link to their website under "Shownotes" in the
   player. The link comes from the website field of moOde's station list.
+- Mark radio stations as favourites and edit their stream address, website,
+  genre, broadcaster, language and country: ⋯ on a station tile or in the
+  player. moOde saves the change itself, as if made in its station editor.
 
 ## [0.5.1] - 2026-11-01
 
