@@ -172,7 +172,8 @@ async function viewDiscover(back) {
   const [recs, subs] = await Promise.all([api("/api/recommendations"), api("/api/subscriptions")]);
   const have = new Set(subs.map(s => s.url));
   const card = r => `<div class="card"><img src="${img(r.image)}" alt="" loading="lazy" onerror="${hideBroken}">
-    <div class="grow"><div class="t">${esc(r.title)}</div><div class="s">${esc(r.author || r.description || "")}</div></div>
+    <div class="grow"><div class="t">${esc(r.title)}</div><div class="s">${esc(r.author || r.description || "")}${
+      (r.sources || []).join() === "ard" ? ` · <span class="muted">ARD Audiothek</span>` : ""}</div></div>
     ${have.has(r.url) ? `<span class="muted small">✓ Abo</span>`
       : `<button class="btn acc" data-sub="${esc(r.url)}" data-title="${esc(r.title)}">Abonnieren</button>`}</div>`;
   const cats = [...new Set(recs.map(r => r.category))];

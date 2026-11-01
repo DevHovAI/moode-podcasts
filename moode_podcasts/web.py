@@ -11,7 +11,7 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib import resources
 
-from moode_podcasts import images, library, marked, net, opml, radio, settings, sync
+from moode_podcasts import directory, images, library, marked, net, opml, radio, settings, sync
 from moode_podcasts.mpd import Mpd
 from moode_podcasts.player import Player, check_path
 from moode_podcasts.store import Marked, Progress, Store, find
@@ -30,22 +30,6 @@ _sync_lock = threading.Lock()
 def recommendations() -> list[dict]:
     raw = resources.files("moode_podcasts").joinpath("data/recommendations.json").read_text()
     return json.loads(raw)
-
-
-def search(term: str) -> list[dict]:
-    # iTunes-Verzeichnis: frei, ohne Schlüssel, liefert die Feed-Adresse mit
-    q = urllib.parse.urlencode({"media": "podcast", "country": "DE", "limit": 25, "term": term})
-    data = json.loads(net.fetch(f"https://itunes.apple.com/search?{q}", limit=2_000_000))
-    return [
-        {
-            "title": r.get("collectionName", ""),
-            "author": r.get("artistName", ""),
-            "url": r["feedUrl"],
-            "image": r.get("artworkUrl600") or r.get("artworkUrl100", ""),
-        }
-        for r in data.get("results", [])
-        if r.get("feedUrl")
-    ]
 
 
 def _run_sync_all(store: Store) -> None:
@@ -266,7 +250,7 @@ class Handler(BaseHTTPRequestHandler):
             self._json(recommendations())
         elif route == "/api/search":
             term = q.get("q", "").strip()
-            self._json(search(term) if term else [])
+            self._json(directory.search(term) if term else [])
         elif route == "/api/opml":
             body = opml.write(self.store.load())
             disposition = 'attachment; filename="moode-podcasts.opml"'

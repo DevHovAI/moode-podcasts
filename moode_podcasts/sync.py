@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import time
 
-from moode_podcasts import chapters, net
+from moode_podcasts import ardaudiothek, chapters, net
 from moode_podcasts.feeds import Episode, Podcast, parse_feed
 from moode_podcasts.store import DEFAULT_LIMIT, Store, find
 
@@ -46,10 +46,17 @@ def _episodes(sub: dict, pod: Podcast) -> list[dict]:
     return out
 
 
+def load(url: str) -> Podcast:
+    """RSS-Feed holen – oder bei einer ARD-Sendung ohne Feed deren Folgen aus der Audiothek."""
+    if show := ardaudiothek.show_id(url):
+        return ardaudiothek.fetch_podcast(show, limit=DEFAULT_LIMIT)
+    return parse_feed(net.fetch(url))
+
+
 def _refresh(sub: dict) -> None:
     """Feed holen und Folgen übernehmen. Fehler landen im Abo, die alte Liste bleibt."""
     try:
-        pod = parse_feed(net.fetch(sub["url"]))
+        pod = load(sub["url"])
     except Exception as exc:
         sub["error"] = str(exc)
         log.warning("%s: %s", sub["url"], exc)
@@ -68,7 +75,7 @@ def _refresh(sub: dict) -> None:
 def subscribe(store: Store, url: str, title: str = "") -> dict:
     url = net.check_url(url)
     # Erst ohne Sperre prüfen und holen: ein langsamer Feed soll die Seite nicht blockieren
-    pod = parse_feed(net.fetch(url))
+    pod = load(url)
     with store.edit() as subs:
         if existing := find(subs, url):
             return existing

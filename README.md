@@ -28,8 +28,11 @@ modified; station changes go through moOde's own interface.
 - **Themes**: six colour schemes, light/dark/automatic, any accent colour or
   moOde's own
 - **Discover**: curated recommendations (German-language, mostly public
-  broadcasters: ARD, Deutschlandfunk, ORF, SRF), search via the iTunes
-  directory, paste any RSS feed
+  broadcasters: ARD, Deutschlandfunk, ORF, SRF), search across the iTunes
+  directory and the ARD Audiothek at once (each podcast listed once), paste
+  any RSS feed. ARD shows without an RSS feed can be subscribed too; their
+  episodes come from the Audiothek's API, so other apps cannot use them from
+  an OPML export
 - **OPML** import and export, the format AntennaPod, gPodder, Kasts, Podcast
   Addict, Pocket Casts and others use for their subscriptions
 - live updates in the page (server-sent events), feeds refresh every two hours,
