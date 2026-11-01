@@ -6,13 +6,44 @@ from http.server import ThreadingHTTPServer
 import pytest
 
 from moode_podcasts import web
-from moode_podcasts.store import Store
+from moode_podcasts.player import Player
+from moode_podcasts.store import Progress, Store
+
+FEED = "https://e.org/feed"
 
 
 @pytest.fixture
 def server(dirs):
-    web.Handler.store = Store()
+    store = Store()
+    with store.edit() as subs:
+        subs.append(
+            {
+                "url": FEED,
+                "title": "Cast",
+                "image": "https://e.org/c.png",
+                "episodes": [
+                    {
+                        "url": "https://e.org/old.mp3",
+                        "title": "Alt",
+                        "published": 100,
+                        "description": "x",
+                    },
+                    {
+                        "url": "https://e.org/new.mp3",
+                        "title": "Neu",
+                        "published": 200,
+                        "description": "Notizen",
+                    },
+                ],
+            }
+        )
+    progress = Progress()
+    with progress.edit() as prog:
+        prog["https://e.org/old.mp3"] = {"pos": 10, "played": True}
+    web.Handler.store, web.Handler.progress = store, progress
+    web.Handler.player = Player(store, progress)
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), web.Handler)
+    httpd.daemon_threads = True
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
     yield httpd.server_address[1]
     httpd.shutdown()
@@ -26,21 +57,66 @@ def call(port, method, path, body=None, page=True):
     return resp.status, resp.read()
 
 
-def test_index_and_recommendations(server):
-    status, page = call(server, "GET", "/")
-    assert status == 200 and b"<title>Podcasts" in page
-    status, body = call(server, "GET", "/api/recommendations")
-    recs = json.loads(body)
-    assert status == 200 and len(recs) >= 20
+def get_json(port, path):
+    status, body = call(port, "GET", path)
+    assert status == 200, body
+    return json.loads(body)
+
+
+def test_static_files(server):
+    for path, marker in (("/", b"<title>"), ("/app.js", b"EventSource"), ("/app.css", b"--acc")):
+        status, body = call(server, "GET", path)
+        assert status == 200 and marker in body
+
+
+def test_recommendations_are_sane(server):
+    recs = get_json(server, "/api/recommendations")
+    assert len(recs) >= 20
     assert all(r["url"].startswith(("http://", "https://")) for r in recs)
     assert len({r["url"] for r in recs}) == len(recs)
 
 
+def test_latest_podcast_and_episode(server):
+    latest = get_json(server, "/api/latest")
+    assert [e["title"] for e in latest] == ["Neu", "Alt"]
+    assert latest[1]["progress"]["played"] is True
+    assert latest[0]["podcast"] == "Cast"
+    assert "description" not in latest[0]  # Liste bleibt schlank
+    subs = get_json(server, "/api/subscriptions")
+    assert (subs[0]["count"], subs[0]["newest"]) == (2, 200)
+    assert "episodes" not in subs[0]
+    pod = get_json(server, "/api/podcast?url=" + FEED)
+    assert len(pod["episodes"]) == 2
+    ep = get_json(server, "/api/episode?url=https://e.org/new.mp3")
+    assert ep["description"] == "Notizen"
+    assert call(server, "GET", "/api/episode?url=https://e.org/nope")[0] == 404
+
+
+def test_radio(server):
+    assert [s["name"] for s in get_json(server, "/api/radio")] == ["Radio FM4", "WDR 5"]
+
+
 def test_writes_need_the_page_header(server):
-    status, _ = call(server, "POST", "/api/sync", page=False)
-    assert status == 403
-    status, _ = call(server, "DELETE", "/api/subscriptions?url=x", page=False)
-    assert status == 403
+    assert call(server, "POST", "/api/sync", page=False)[0] == 403
+    assert call(server, "POST", "/api/player", body=b'{"action":"toggle"}', page=False)[0] == 403
+    assert call(server, "DELETE", "/api/subscriptions?url=x", page=False)[0] == 403
+
+
+def test_mark_played(server):
+    status, _ = call(
+        server,
+        "POST",
+        "/api/progress",
+        body=json.dumps({"url": "https://e.org/old.mp3", "played": False}).encode(),
+    )
+    assert status == 200
+    assert get_json(server, "/api/latest")[1]["progress"]["played"] is False
+
+
+def test_player_rejects_unknown_actions_and_bad_urls(server):
+    assert call(server, "POST", "/api/player", body=b'{"action":"explode"}')[0] == 400
+    body = json.dumps({"action": "play", "url": "file:///etc/passwd"}).encode()
+    assert call(server, "POST", "/api/player", body=body)[0] == 400
 
 
 def test_opml_preview_and_export(server):
@@ -49,7 +125,17 @@ def test_opml_preview_and_export(server):
     assert status == 200
     assert json.loads(body) == [{"url": "https://e.org/a", "title": "A", "subscribed": False}]
     status, body = call(server, "GET", "/api/opml")
-    assert status == 200 and body.startswith(b"<?xml")
+    assert status == 200 and b'xmlUrl="https://e.org/feed"' in body
+
+
+def test_events_stream_sends_the_last_state(server):
+    web.Handler.player.hub.publish({"state": "pause"})
+    conn = http.client.HTTPConnection("127.0.0.1", server, timeout=5)
+    conn.request("GET", "/api/events")
+    resp = conn.getresponse()
+    assert resp.getheader("Content-Type") == "text/event-stream"
+    assert resp.readline() == b'data: {"state": "pause"}\n'
+    conn.close()
 
 
 def test_unknown_routes(server):

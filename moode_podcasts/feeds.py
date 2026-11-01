@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import email.utils
+import html
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from html.parser import HTMLParser
 
 from moode_podcasts.xmlsafe import XmlError, local, parse
 
@@ -18,6 +20,8 @@ class Episode:
     # [(Start in Sekunden, Titel)] aus Podlove Simple Chapters, sonst leer
     chapters: list[tuple[float, str]] = field(default_factory=list)
     chapters_url: str = ""  # podcast:chapters (JSON)
+    duration: float | None = None  # Sekunden, aus itunes:duration
+    description: str = ""  # Shownotes als Klartext
 
 
 @dataclass
@@ -85,9 +89,37 @@ def _chapters_url(item) -> str:
     return ""
 
 
+class _Text(HTMLParser):
+    """HTML der Shownotes in Klartext mit Absätzen."""
+
+    BREAKS = frozenset({"p", "br", "div", "li", "h1", "h2", "h3", "h4", "tr"})
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.parts: list[str] = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag in self.BREAKS:
+            self.parts.append("\n")
+
+    def handle_data(self, data):
+        self.parts.append(data)
+
+
+def plain_text(html: str, limit: int = 4000) -> str:
+    parser = _Text()
+    try:
+        parser.feed(html)
+        parser.close()
+    except Exception:
+        return " ".join(html.split())[:limit]
+    lines = (" ".join(line.split()) for line in "".join(parser.parts).splitlines())
+    return "\n".join(line for line in lines if line)[:limit]
+
+
 def _clean(s: str) -> str:
-    # Zeilenumbrüche würden die m3u zerreißen
-    return " ".join(s.split())
+    # manche Feeds kodieren doppelt („&amp;amp;“) – einmal nachentschlüsseln
+    return " ".join(html.unescape(s).split())
 
 
 def _itunes_image(el) -> str:
@@ -141,6 +173,7 @@ def parse_feed(data: bytes) -> Podcast:
             continue
         published = next((d for t in date_tags if (d := _date(_text(it, t)))), None)
         title = _clean(_text(it, "title")) or "Episode"
+        notes = _text(it, "encoded") or _text(it, "description") or _text(it, "summary")
         pod.episodes.append(
             Episode(
                 title,
@@ -149,6 +182,8 @@ def parse_feed(data: bytes) -> Podcast:
                 _itunes_image(it),
                 _psc_chapters(it),
                 _chapters_url(it),
+                seconds(_text(it, "duration")) if _text(it, "duration") else None,
+                plain_text(notes),
             )
         )
 

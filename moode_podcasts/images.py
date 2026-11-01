@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import hashlib
 import io
 import os
+import threading
 from pathlib import Path
+
+from moode_podcasts import net, paths
 
 
 def atomic_write(path: Path, data: bytes) -> None:
@@ -50,3 +54,28 @@ def square_jpegs(raw: bytes, sizes: tuple[int, ...]) -> dict[int, bytes] | None:
 def square_jpeg(raw: bytes, size: int) -> bytes | None:
     jpegs = square_jpegs(raw, (size,))
     return jpegs[size] if jpegs else None
+
+
+_convert = threading.Semaphore(1)  # nie mehrere Bilder gleichzeitig umrechnen (Netzteil!)
+SIZES = (160, 600)
+
+
+def cached(url: str, size: int) -> bytes | None:
+    """Bild als quadratisches JPEG aus dem Cache, beim ersten Mal geladen und verkleinert."""
+    if size not in SIZES:
+        size = SIZES[0]
+    key = hashlib.sha1(url.encode()).hexdigest()
+    path = paths.image_cache() / f"{key}-{size}.jpg"
+    if path.exists():
+        return path.read_bytes()
+    raw = net.fetch(url, limit=10_000_000)
+    with _convert:
+        if path.exists():  # inzwischen von einer anderen Anfrage erledigt
+            return path.read_bytes()
+        jpegs = square_jpegs(raw, SIZES)
+        if not jpegs:
+            return None
+        path.parent.mkdir(parents=True, exist_ok=True)
+        for s, data in jpegs.items():
+            atomic_write(paths.image_cache() / f"{key}-{s}.jpg", data)
+    return jpegs[size]

@@ -35,7 +35,7 @@ def main(argv=None) -> int:
         return 1 if sync.sync_all(store) else 0
     elif args.cmd == "add":
         sub = sync.subscribe(store, args.url)
-        print(f"{sub['name']}: {sub.get('episodes', 0)} episodes")
+        print(f"{sub.get('title')}: {len(sub.get('episodes', []))} episodes")
     elif args.cmd == "remove":
         return 0 if sync.unsubscribe(store, args.url) else 1
     elif args.cmd == "list":
@@ -43,9 +43,9 @@ def main(argv=None) -> int:
             state = (
                 f"ERROR {sub['error']}"
                 if sub.get("error")
-                else f"{sub.get('episodes', 0)} episodes"
+                else f"{len(sub.get('episodes', []))} episodes"
             )
-            print(f"{sub['name']}\t{state}\t{sub['url']}")
+            print(f"{sub.get('title')}\t{state}\t{sub['url']}")
     return 0
 
 

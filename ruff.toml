@@ -58,7 +58,7 @@ ignore = [
 "tools/*.py" = ["T201", "T203", "E402"]
 # Wie tools: Skripte für das Gerät, print() ist ihre Ausgabe; PHP-Zeilen lassen sich nicht umbrechen.
 "deploy/*.py" = ["T201", "E501"]
-"tests/test_moode_patch.py" = ["E501"]
+"tests/test_cleanup.py" = ["E501"]
 "tests/*.py" = ["T201"]
 # A command line interface prints; that is its output, not a debug leftover.
 "**/__main__.py" = ["T201"]

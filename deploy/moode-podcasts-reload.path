@@ -1,8 +1,0 @@
-[Unit]
-Description=Reload moOde's station list when moode-podcasts changes it
-
-[Path]
-PathModified=/var/lib/moode-podcasts/reload
-
-[Install]
-WantedBy=multi-user.target

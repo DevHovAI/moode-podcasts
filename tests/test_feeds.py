@@ -56,3 +56,10 @@ def test_ignores_non_http_enclosures():
     data = b"""<rss><channel><title>X</title>
       <item><enclosure url="file:///etc/passwd"/></item></channel></rss>"""
     assert parse_feed(data).episodes == []
+
+
+def test_double_encoded_titles_are_decoded():
+    data = b"""<rss><channel><title>Rock &amp;amp; Roll</title>
+      <item><title>A &amp;amp; B</title><enclosure url="https://e.org/1.mp3"/></item></channel></rss>"""
+    pod = parse_feed(data)
+    assert (pod.title, pod.episodes[0].title) == ("Rock & Roll", "A & B")

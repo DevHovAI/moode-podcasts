@@ -10,6 +10,20 @@ that you could not do before. They are not a copy of the commit subjects.
 
 ## [Unreleased]
 
+### Changed
+
+- **The web page is now the player** (#6): newest episodes, podcast pages,
+  a player with seek bar, ±30 s, chapter list, shownotes and queue, resume
+  position and "played" markers, and moOde's radio stations. Playback still
+  goes through moOde's MPD.
+- **moOde is no longer modified.** The generated playlists, the hidden rows in
+  moOde's station table and the tweak to `inc/mpd.php` are gone; upgrading
+  removes them automatically.
+
+### Removed
+
+- Podcast playlists in moOde's Playlists view and chapter splitting in the queue.
+
 ### Added
 
 - Chapters: episodes with chapters (Podlove in the feed, `podcast:chapters`,

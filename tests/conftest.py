@@ -26,43 +26,27 @@ CFG_RADIO = """CREATE TABLE cfg_radio (id INTEGER PRIMARY KEY, station CHAR (128
 
 @pytest.fixture
 def dirs(tmp_path, monkeypatch):
-    """Alle Pfade im tmp_path plus eine cfg_radio; paths liest die Umgebung bei jedem Aufruf."""
+    """Datenordner und eine kleine cfg_radio im tmp_path."""
     import sqlite3
 
-    from moode_podcasts import mpd
-
-    d = {name: tmp_path / name for name in ("data", "playlists", "covers", "logos")}
-    for p in d.values():
-        p.mkdir()
-    d["db"] = tmp_path / "moode.db"
+    d = {"data": tmp_path / "data", "db": tmp_path / "moode.db"}
+    d["data"].mkdir()
     with sqlite3.connect(d["db"]) as db:
         db.execute(CFG_RADIO)
-        db.execute(
-            "INSERT INTO cfg_radio (id, station, name, type) VALUES (1, 'http://r', 'Radio', 'r')"
+        db.executemany(
+            "INSERT INTO cfg_radio (station, name, type, genre, broadcaster)"
+            " VALUES (?, ?, ?, ?, ?)",
+            [
+                ("http://r/wdr5", "WDR 5", "r", "News", "WDR"),
+                ("http://r/fm4", "Radio FM4", "f", "Alternative", "ORF"),
+                ("http://r/hidden", "Versteckt", "h", "", ""),
+                ("https://e/1.mp3", "Cast · One", "p", "Podcast", ""),
+                ("DELETED", "Gelöscht", "r", "", ""),
+            ],
         )
     monkeypatch.setenv("MOODE_PODCASTS_DATA", str(d["data"]))
-    monkeypatch.setenv("MOODE_PODCASTS_PLAYLISTS", str(d["playlists"]))
-    monkeypatch.setenv("MOODE_PODCASTS_COVERS", str(d["covers"]))
-    monkeypatch.setenv("MOODE_PODCASTS_LOGOS", str(d["logos"]))
     monkeypatch.setenv("MOODE_PODCASTS_DB", str(d["db"]))
-    # Kein echter MPD: Warteschlange ist leer, außer ein Test setzt etwas
-    d["queue"] = set()
-    monkeypatch.setattr(mpd, "queued_files", lambda: set(d["queue"]))
     return d
-
-
-@pytest.fixture
-def rows(dirs):
-    """rows(where) -> [(station, name, type)] aus der Test-cfg_radio."""
-    import sqlite3
-
-    def query(where="1=1"):
-        with sqlite3.connect(dirs["db"]) as db:
-            return db.execute(
-                f"SELECT station, name, type FROM cfg_radio WHERE {where} ORDER BY id"
-            ).fetchall()
-
-    return query
 
 
 RSS = b"""<?xml version="1.0" encoding="UTF-8"?>
@@ -81,6 +65,8 @@ RSS = b"""<?xml version="1.0" encoding="UTF-8"?>
   <item>
     <title>Newest,
       with a comma</title>
+    <itunes:duration>30:30</itunes:duration>
+    <description><![CDATA[<p>First line.</p><p>Second paragraph &amp; more.</p>]]></description>
     <pubDate>Tue, 28 Oct 2025 06:00:00 +0100</pubDate>
     <enclosure url="https://example.org/2.mp3" type="audio/mpeg" length="1"/>
   </item>
