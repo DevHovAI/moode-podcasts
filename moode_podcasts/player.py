@@ -139,6 +139,8 @@ class Player:
         self.lock = threading.Lock()
         self._seek_thread: threading.Thread | None = None
         self._saved: tuple[str, float, float] = ("", 0.0, 0.0)  # (url, wann, position)
+        # Sleep-Timer nach Zeit; „Ende der Folge“ hält MPD selbst (single oneshot)
+        self.sleep_until: float | None = None
 
     # --- Zustand ------------------------------------------------------------
 
@@ -156,6 +158,13 @@ class Player:
             "songid": sid,
             "error": st.get("error", ""),
             "time": time.time(),
+            "sleep": (
+                {"until": self.sleep_until}
+                if self.sleep_until
+                else {"end": True}
+                if st.get("single") == "oneshot"
+                else None
+            ),
         }
         if cur:
             info = self.library.describe(cur["file"])
@@ -388,6 +397,35 @@ class Player:
         with Mpd() as m:
             m.command(f"setvol {max(0, min(100, int(value)))}")
 
+    # --- Sleep-Timer -----------------------------------------------------------
+
+    def set_sleep(self, minutes: float | None = None, end: bool = False) -> None:
+        """Nach minutes pausieren, oder am Ende des laufenden Titels; ohne beides: aus."""
+        with Mpd() as m:
+            if end:
+                self.sleep_until = None
+                m.command("single oneshot")  # MPD hält nach dem Titel an und setzt single zurück
+            else:
+                if _status(m).get("single") == "oneshot":
+                    m.command("single 0")
+                self.sleep_until = time.time() + minutes * 60 if minutes else None
+            self.hub.publish(self.snapshot(m))
+
+    def _sleep_due(self, m: Mpd, snap: dict) -> bool:
+        """Zeit abgelaufen? Dann pausieren (nicht stoppen: der Hörstand bleibt)."""
+        if not self.sleep_until or time.time() < self.sleep_until:
+            return False
+        self.sleep_until = None
+        if snap["state"] == "play":
+            m.command("pause 1")
+        return True
+
+    def _idle_time(self, snap: dict) -> float:
+        wait = 2 if snap.get("seeking") else 5 if snap["state"] == "play" else 30
+        if self.sleep_until:
+            wait = min(wait, max(0.2, self.sleep_until - time.time()))
+        return wait
+
     # --- Statusdienst --------------------------------------------------------
 
     def monitor(self, stop: threading.Event | None = None) -> None:
@@ -397,20 +435,17 @@ class Player:
         while not stop.is_set():
             try:
                 with Mpd(timeout=None) as m:
-                    playing = False
                     while not stop.is_set():
                         snap = self.snapshot(m)
-                        playing = snap["state"] == "play"
+                        if self._sleep_due(m, snap):
+                            snap = self.snapshot(m)
                         song_changed = (last_song or {}).get("songid") != snap.get("songid")
                         if song_changed and last_song:
                             self.save_progress(last_song, force=True)
                         self.save_progress(snap)
                         last_song = snap
                         self.hub.publish(snap)
-                        m.idle(
-                            "player playlist mixer",
-                            2 if snap.get("seeking") else 5 if playing else 30,
-                        )
+                        m.idle("player playlist mixer options", self._idle_time(snap))
             except (OSError, MpdError) as exc:
                 log.debug("MPD: %s", exc)
                 stop.wait(5)

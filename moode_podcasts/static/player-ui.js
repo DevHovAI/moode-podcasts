@@ -65,9 +65,49 @@ function render(S) {
   tick();
 }
 
+// Sleep-Timer: Restzeit nach der Uhr des Pi, nicht des Handys
+function sleepLeft(S) {
+  const until = S.sleep && S.sleep.until;
+  return until ? Math.max(0, until - (S.time + (performance.now() - live.recvAt) / 1000)) : 0;
+}
+
+function renderSleep(S) {
+  const b = $("#np-sleep"), left = sleepLeft(S);
+  const endText = S.current && S.current.kind === "episode" ? "☾ Ende der Folge" : "☾ Ende des Titels";
+  const text = S.sleep && S.sleep.end ? endText
+    : left ? `☾ noch ${left >= 60 ? Math.ceil(left / 60) + " min" : Math.ceil(left) + " s"}` : "☾ Sleep-Timer";
+  if (b.textContent !== text) b.textContent = text;
+  b.classList.toggle("on", !!S.sleep);
+}
+
+function openSleep() {
+  const S = live.S, c = S && S.current;
+  // ein Livestream hat kein Ende – nur Folgen und Titel mit bekannter Länge
+  const canEnd = c && c.kind !== "radio" && (c.kind === "episode" || S.duration > 0);
+  const m = document.createElement("div");
+  m.className = "modal";
+  m.innerHTML = `<div class="box"><h3>Sleep-Timer</h3>
+    <p class="muted small">Pausiert die Wiedergabe – auch wenn diese Seite geschlossen ist.</p>
+    <div class="bar" style="flex-wrap:wrap">
+      ${[15, 30, 45, 60, 90].map(n => `<button class="btn" data-min="${n}">${n} min</button>`).join("")}
+      ${canEnd ? `<button class="btn" data-end="1">${c.kind === "episode" ? "Ende der Folge" : "Ende des Titels"}</button>` : ""}
+    </div>
+    ${S && S.sleep ? `<div class="bar" style="margin-top:10px"><button class="btn acc" data-off="1">Timer aus</button></div>` : ""}
+  </div>`;
+  m.onclick = async ev => {
+    if (ev.target === m) { m.remove(); return; }
+    const b = ev.target.closest("button");
+    if (!b) return;
+    m.remove();
+    await player("sleep", b.dataset.min ? {minutes: +b.dataset.min} : b.dataset.end ? {end: true} : {});
+  };
+  document.body.appendChild(m);
+}
+
 function tick() {
   const S = live.S;
   if (!S || !S.current) return;
+  renderSleep(S);
   const pos = elapsedNow(), dur = S.duration || 0;
   $("#mini-bar").style.width = dur ? `${Math.min(100, pos / dur * 100)}%` : "0";
   if (!dragging) {
@@ -135,6 +175,7 @@ export function initPlayer() {
   setInterval(tick, 1000);
   $("#mini-toggle").onclick = e => { e.stopPropagation(); player("toggle"); };
   $("#np-toggle").onclick = () => player("toggle");
+  $("#np-sleep").onclick = openSleep;
   $("#mini-open").onclick = $("#mini-cover").onclick = openPlayer;
   $("#sheet-close").onclick = closePlayer;
   $$("[data-skip]").forEach(b => b.onclick = () => player("skip", {delta: +b.dataset.skip}));

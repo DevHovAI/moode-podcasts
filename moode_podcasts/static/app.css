@@ -194,3 +194,7 @@ input[type=color] { width: 44px; height: 36px; border: 0; background: none; padd
   border-radius: 50%; background: rgba(0,0,0,.45); color: #fff; }
 .station-form { margin-top: 14px; display: grid; gap: 10px; }
 .station-form label { display: grid; gap: 4px; font-size: 13px; color: var(--dim); }
+
+/* Sleep-Timer im Player */
+.np-extra { display: flex; justify-content: center; margin-top: 10px; }
+#np-sleep.on { box-shadow: inset 0 0 0 2px var(--acc); }

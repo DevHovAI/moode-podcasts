@@ -1,4 +1,5 @@
 import threading
+import time
 
 import pytest
 
@@ -211,3 +212,36 @@ def test_local_songs_and_albums(mpd, p):
         with pytest.raises(ValueError):
             check_path(bad)
     assert check_path("NAS/A/x.flac") == "NAS/A/x.flac"
+
+
+def test_sleep_timer_pauses_when_due(mpd, p, monkeypatch):
+    p.set_sleep(30)
+    snap = p.state()
+    assert snap["sleep"]["until"] == pytest.approx(time.time() + 1800, abs=5)
+    assert 0 < p._idle_time(snap) <= 5
+    # Zeit abgelaufen: der Statusdienst pausiert und meldet den Timer als aus
+    p.sleep_until = time.time() - 1
+    stop = threading.Event()
+    got = []
+    monkeypatch.setattr(p.hub, "publish", lambda s: (got.append(s), stop.set()))
+    monkeypatch.setattr(player_mod.Mpd, "idle", lambda self, subs, timeout: [])
+    p.monitor(stop)
+    assert mpd.st["state"] == "pause"
+    assert got[-1]["state"] == "pause" and got[-1]["sleep"] is None
+
+
+def test_sleep_end_of_track_uses_single_oneshot(mpd, p):
+    p.set_sleep(end=True)
+    assert mpd.st["single"] == "oneshot"
+    assert p.state()["sleep"] == {"end": True}
+    # Wechsel auf Minuten nimmt oneshot zurück, „aus“ löscht alles
+    p.set_sleep(15)
+    assert mpd.st["single"] == "0" and "until" in p.state()["sleep"]
+    p.set_sleep(None)
+    assert p.state()["sleep"] is None and mpd.st["state"] == "play"
+
+
+def test_sleep_off_leaves_a_permanent_single_alone(mpd, p):
+    mpd.st["single"] = "1"  # in moOde eingestellt, nicht von uns
+    p.set_sleep(None)
+    assert mpd.st["single"] == "1"

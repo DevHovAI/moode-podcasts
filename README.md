@@ -14,7 +14,8 @@ modified; station changes go through moOde's own interface.
 - **Podcasts**: one tab with New, My podcasts (grouped by genre), Continue
   listening and Discover, each a short preview with 'show all'
 - **Player**: seek bar, ±30 s, chapter list (tap to jump), shownotes,
-  next/previous jump between chapters, the queue ("Warteschlange")
+  next/previous jump between chapters, the queue ("Warteschlange"), a sleep
+  timer (minutes or end of episode) that runs on the device
 - **Saved for later** ("Vorgemerkt"): a starred list of episodes, tracks and
   albums kept on the device; finished episodes drop out by themselves
 - **Resume**: remembers where you stopped in every episode, shows progress and

@@ -17,6 +17,9 @@ that you could not do before. They are not a copy of the commit subjects.
 - Mark radio stations as favourites and edit their stream address, website,
   genre, broadcaster, language and country: ⋯ on a station tile or in the
   player. moOde saves the change itself, as if made in its station editor.
+- Sleep timer in the player: pause after 15 to 90 minutes or at the end of
+  the current episode. It runs on the moOde device, so it works with the
+  page closed, and every device sees the time left.
 - Podcast search also covers the ARD Audiothek. A podcast found in both
   places is shown once. ARD shows that have no RSS feed of their own can be
   subscribed as well.
