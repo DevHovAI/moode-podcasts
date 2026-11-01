@@ -43,6 +43,13 @@ requests, release notes — is English.
   monitor loop (pause, not stop); "end of episode" is MPD's own
   `single oneshot`, so it is read back from MPD's status. Never touch a
   `single 1` the user set in moOde.
+- Backup (`backup.py`) is moOde's own backup zip, fetched from
+  `bkp-config.php`, with our files added under `moode-podcasts/`. moOde finds
+  its parts by name and substring (`playlists/`, `www/`, `camilladsp/`), so
+  our folder name must not contain those. Restoring moOde's parts goes
+  through the same page (upload, then `restore_start`). Zips are ~70 MB:
+  stream to files in `paths.work_dir()` on the SD card, never into memory
+  or `/tmp` (tmpfs on the Pi, counts against `MemoryMax`).
 - Never store position 0 as progress (MPD reports 0 after stop).
 - `paths.py` reads the environment on every call so tests can redirect it.
 - Write requests need the `X-Moode-Podcasts: 1` header (cheap CSRF guard).

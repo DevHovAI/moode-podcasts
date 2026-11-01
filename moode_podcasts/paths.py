@@ -8,6 +8,11 @@ def data_dir() -> Path:
     return Path(os.environ.get("MOODE_PODCASTS_DATA", "/var/lib/moode-podcasts"))
 
 
+def work_dir() -> Path:
+    """Arbeitsdateien der Sicherung (bis ~70 MB) – auf der Karte, nicht in /tmp (RAM-Disk)."""
+    return data_dir() / "tmp"
+
+
 def image_cache() -> Path:
     return data_dir() / "img"
 

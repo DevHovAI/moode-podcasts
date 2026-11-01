@@ -34,6 +34,10 @@ modified; station changes go through moOde's own interface.
   any RSS feed. ARD shows without an RSS feed can be subscribed too; their
   episodes come from the Audiothek's API, so other apps cannot use them from
   an OPML export
+- **Backup** in the settings: one zip with subscriptions, listening
+  progress, saved items, home screen and theme, plus moOde's own backup
+  (settings, all radio stations, playlists …). Restore it here, or in moOde's
+  backup page, which takes only its own parts
 - **OPML** import and export, the format AntennaPod, gPodder, Kasts, Podcast
   Addict, Pocket Casts and others use for their subscriptions
 - live updates in the page (server-sent events), feeds refresh every two hours,
