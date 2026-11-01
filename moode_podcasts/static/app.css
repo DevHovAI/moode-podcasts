@@ -183,3 +183,6 @@ input[type=color] { width: 44px; height: 36px; border: 0; background: none; padd
 /* waagerechte Reihen wischen statt Scrollbalken zeigen */
 .chips, .row, #tabs { scrollbar-width: none; }
 .chips::-webkit-scrollbar, .row::-webkit-scrollbar, #tabs::-webkit-scrollbar { display: none; }
+.mark { color: var(--dim); }
+.mark.on { color: var(--acc); }
+.btn.mark.on { color: var(--fg); box-shadow: inset 0 0 0 2px var(--acc); }

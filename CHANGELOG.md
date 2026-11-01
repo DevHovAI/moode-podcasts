@@ -12,6 +12,10 @@ that you could not do before. They are not a copy of the commit subjects.
 
 ### Added
 
+- **Saved for later** ("Vorgemerkt", #10): star episodes, tracks and albums to
+  keep them in a list on the device. Play the whole list or append it to the
+  queue; finished episodes drop out of it on their own. Shown in the Podcasts
+  tab, as a home block and on its own page.
 - Home screen assembled from blocks, editable in the page and shared by all
   devices (#8).
 - Music tab for moOde's local library: artists, albums, genres, recently added;
@@ -24,6 +28,9 @@ that you could not do before. They are not a copy of the commit subjects.
 
 ### Changed
 
+- "Vormerken" (append to MPD's queue) is now called "Warteschlange" (queue),
+  in the buttons and in the player's tab.
+- Changing views closes an open episode dialog.
 - One Podcasts tab with the sections New, My podcasts, Continue listening and
   Discover.
 

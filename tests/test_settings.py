@@ -6,7 +6,7 @@ from moode_podcasts import settings
 def test_defaults_and_roundtrip(dirs):
     s = settings.load()
     assert s["theme"]["preset"] == "moode"
-    assert [b["type"] for b in s["home"]] == ["continue", "latest", "radio_favorites"]
+    assert [b["type"] for b in s["home"]] == ["marked", "continue", "latest", "radio_favorites"]
     s["theme"].update(preset="nord", mode="light", accent="#123abc")
     s["home"] = [{"type": "podcast", "title": "Lage", "limit": 3, "ref": "https://e.org/feed"}]
     saved = settings.save(s)

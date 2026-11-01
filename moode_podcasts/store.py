@@ -4,10 +4,12 @@ als getrennte Prozesse, deshalb hält jeder Zugriff eine Dateisperre."""
 from __future__ import annotations
 
 import contextlib
+import copy
 import fcntl
 import json
 import os
 from pathlib import Path
+from typing import ClassVar
 
 from moode_podcasts import paths
 
@@ -47,17 +49,21 @@ def find(subs: list[dict], url: str) -> dict | None:
     return next((s for s in subs if s["url"] == url), None)
 
 
-class Progress:
-    """Hörstand je Folgen-Adresse: {url: {pos, duration, played, updated}}."""
+class _JsonFile:
+    """Eine kleine JSON-Datei, gesperrt gelesen und atomar geschrieben."""
+
+    name = ""
+    empty: ClassVar[object] = None
 
     def __init__(self, directory: Path | None = None):
         self.dir = directory or paths.data_dir()
-        self.file = self.dir / "progress.json"
+        self.file = self.dir / f"{self.name}.json"
+        self._lock = self.dir / f".lock-{self.name}"
 
     @contextlib.contextmanager
     def edit(self):
         self.dir.mkdir(parents=True, exist_ok=True)
-        with open(self.dir / ".lock-progress", "w") as lock:
+        with open(self._lock, "w") as lock:
             fcntl.flock(lock, fcntl.LOCK_EX)
             data = self._read()
             yield data
@@ -65,11 +71,30 @@ class Progress:
             tmp.write_text(json.dumps(data, ensure_ascii=False))
             os.replace(tmp, self.file)
 
-    def load(self) -> dict[str, dict]:
+    def load(self):
         self.dir.mkdir(parents=True, exist_ok=True)
-        with open(self.dir / ".lock-progress", "w") as lock:
+        with open(self._lock, "w") as lock:
             fcntl.flock(lock, fcntl.LOCK_SH)
             return self._read()
 
-    def _read(self) -> dict[str, dict]:
-        return json.loads(self.file.read_text()) if self.file.exists() else {}
+    def _read(self):
+        return (
+            json.loads(self.file.read_text()) if self.file.exists() else copy.deepcopy(self.empty)
+        )
+
+
+class Progress(_JsonFile):
+    """Hörstand je Folgen-Adresse: {url: {pos, duration, played, updated}}."""
+
+    name = "progress"
+    empty: ClassVar[dict] = {}
+
+
+class Marked(_JsonFile):
+    """Vorgemerkt: Folgen, Titel und Alben zum späteren Hören, in der Reihenfolge des Merkens.
+
+    Einträge: {key, kind: episode|song|album, url | artist+album, title, subtitle, image, added}
+    """
+
+    name = "marked"
+    empty: ClassVar[list] = []

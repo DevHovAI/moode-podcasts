@@ -11,10 +11,10 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib import resources
 
-from moode_podcasts import images, library, net, opml, radio, settings, sync
+from moode_podcasts import images, library, marked, net, opml, radio, settings, sync
 from moode_podcasts.mpd import Mpd
 from moode_podcasts.player import Player, check_path
-from moode_podcasts.store import Progress, Store, find
+from moode_podcasts.store import Marked, Progress, Store, find
 
 log = logging.getLogger(__name__)
 
@@ -170,6 +170,7 @@ def episode(store: Store, url: str) -> dict | None:
 class Handler(BaseHTTPRequestHandler):
     store: Store
     progress: Progress
+    marked: Marked
     player: Player
     server_version = "moode-podcasts"
 
@@ -235,6 +236,8 @@ class Handler(BaseHTTPRequestHandler):
             self._json(settings.load())
         elif route == "/api/moode-accent":
             self._json({"accent": settings.moode_accent()})
+        elif route == "/api/marked":
+            self._json(marked.listing(self.marked, self.progress, self.store))
         elif route == "/api/continue":
             self._json(continue_listening(self.store, self.progress))
         elif route == "/api/find":
@@ -376,6 +379,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._json({"ok": True})
             elif route == "/api/settings":
                 self._json(settings.save(req))
+            elif route == "/api/marked":
+                self._json(self._marked(req))
             elif route == "/api/progress":
                 self.player.mark(req["url"], bool(req.get("played")))
                 self._json({"ok": True})
@@ -384,6 +389,24 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as exc:
             log.warning("POST %s: %s", route, exc)
             self._error(exc)
+
+    def _marked(self, req: dict) -> list[dict]:
+        action = req.get("action")
+        if action == "add":
+            marked.add(self.marked, marked.make_item(req, self.store))
+        elif action == "remove":
+            marked.remove(self.marked, marked.key_of(req))
+        elif action == "clear":
+            marked.clear(self.marked)
+        elif action == "play":
+            items = marked.listing(self.marked, self.progress, self.store)
+            urls = marked.files(items)
+            if not urls:
+                raise ValueError("Nichts vorgemerkt")
+            self.player.play_many(urls, now=bool(req.get("now", True)))
+        else:
+            raise ValueError(f"unbekannte Aktion {action!r}")
+        return marked.listing(self.marked, self.progress, self.store)
 
     def _player(self, req: dict) -> None:
         p, action = self.player, req.get("action")
@@ -430,6 +453,7 @@ class Handler(BaseHTTPRequestHandler):
 def serve(host: str = "0.0.0.0", port: int = 8090, store: Store | None = None) -> None:
     Handler.store = store or Store()
     Handler.progress = Progress(Handler.store.dir)
+    Handler.marked = Marked(Handler.store.dir)
     Handler.player = Player(Handler.store, Handler.progress)
     Handler.player.start()
     httpd = ThreadingHTTPServer((host, port), Handler)
