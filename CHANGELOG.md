@@ -10,6 +10,23 @@ that you could not do before. They are not a copy of the commit subjects.
 
 ## [Unreleased]
 
+### Added
+
+- Home screen assembled from blocks, editable in the page and shared by all
+  devices (#8).
+- Music tab for moOde's local library: artists, albums, genres, recently added;
+  play or queue albums and tracks.
+- Global search across subscriptions, episodes, radio stations and music.
+- Colour themes with light/dark/automatic mode and a free or moOde-matched
+  accent colour.
+- Radio grouped by genre, language or broadcaster; subscriptions grouped by
+  their iTunes category.
+
+### Changed
+
+- One Podcasts tab with the sections New, My podcasts, Continue listening and
+  Discover.
+
 ### Changed
 
 - **The web page is now the player** (#6): newest episodes, podcast pages,

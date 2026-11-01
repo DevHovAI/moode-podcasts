@@ -58,6 +58,7 @@ def _refresh(sub: dict) -> None:
     sub.update(
         feed_title=pod.title,
         image=pod.image,
+        categories=pod.categories,
         description=pod.description[:500],
         episodes=_episodes(sub, pod),
         last_sync=int(time.time()),

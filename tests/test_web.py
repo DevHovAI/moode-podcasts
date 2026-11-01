@@ -64,9 +64,16 @@ def get_json(port, path):
 
 
 def test_static_files(server):
-    for path, marker in (("/", b"<title>"), ("/app.js", b"EventSource"), ("/app.css", b"--acc")):
+    for path, marker in (
+        ("/", b"<title>"),
+        ("/core.js", b"EventSource"),
+        ("/app.css", b"--acc"),
+        ("/settings.js", b"PRESETS"),
+    ):
         status, body = call(server, "GET", path)
         assert status == 200 and marker in body
+    for path in ("/../web.py", "/nope.js", "/data/recommendations.json", "/.hidden"):
+        assert call(server, "GET", path)[0] == 404
 
 
 def test_recommendations_are_sane(server):
@@ -141,3 +148,35 @@ def test_events_stream_sends_the_last_state(server):
 def test_unknown_routes(server):
     assert call(server, "GET", "/nope")[0] == 404
     assert call(server, "DELETE", "/api/subscriptions?url=https://e.org/x")[0] == 404
+
+
+def test_settings_api(server):
+    assert get_json(server, "/api/settings")["theme"]["preset"] == "moode"
+    body = json.dumps({"theme": {"preset": "wald", "mode": "auto"}, "home": []}).encode()
+    status, data = call(server, "POST", "/api/settings", body=body)
+    assert status == 200 and json.loads(data)["theme"]["preset"] == "wald"
+    assert get_json(server, "/api/settings")["home"] == []
+    assert call(server, "POST", "/api/settings", body=body, page=False)[0] == 403
+
+
+def test_continue_lists_started_episodes(server):
+    with web.Handler.progress.edit() as prog:
+        prog["https://e.org/new.mp3"] = {"pos": 50, "played": False, "updated": 5}
+    assert [e["title"] for e in get_json(server, "/api/continue")] == ["Neu"]
+
+
+def test_global_find(server, mpd):
+    found = get_json(server, "/api/find?q=neu")
+    assert [e["title"] for e in found["episodes"]] == ["Neu"]
+    assert get_json(server, "/api/find?q=fm4")["radio"][0]["name"] == "Radio FM4"
+    assert [p["title"] for p in get_json(server, "/api/find?q=cast")["podcasts"]] == ["Cast"]
+    assert get_json(server, "/api/find?q=anna")["music"]["artists"] == ["Anna"]
+
+
+def test_library_api_and_cover_redirect(server, mpd):
+    assert get_json(server, "/api/library/artists") == ["Anna", "Ben", "O'Neil"]
+    conn = http.client.HTTPConnection("127.0.0.1", server, timeout=5)
+    conn.request("GET", "/api/library/cover?artist=Anna&album=Album%201", headers={"Host": "moode"})
+    resp = conn.getresponse()
+    assert resp.status == 302
+    assert resp.getheader("Location") == "http://moode/coverart.php/NAS/A/Album%201/01.flac"
