@@ -1,0 +1,40 @@
+name: Bug report
+description: Something does not work the way it should
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please do not paste home directory paths, e-mail addresses,
+        account IDs or API keys. Replace them with `<path>` or `<key>`.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you see, and what did you expect instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to reproduce
+      placeholder: |
+        1. …
+        2. …
+    validations:
+      required: true
+
+  - type: textarea
+    id: output
+    attributes:
+      label: Error output
+      description: Any message or traceback. Rendered as a code block.
+      render: text
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The output of `just version`, or the release tag.

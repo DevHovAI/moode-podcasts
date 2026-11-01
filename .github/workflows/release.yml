@@ -1,0 +1,180 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag, e.g. v1.2.0"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v4
+        with:
+          # Without the full history git describe cannot find the previous tag.
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Determine tag
+        id: tag
+        run: |
+          tag="${{ github.event.inputs.tag || github.ref_name }}"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Tag and __version__ must agree
+        run: |
+          source="$(grep -oP '__version__ = "\K[^"]+' moode_podcasts/__init__.py)"
+          expected="${{ steps.tag.outputs.version }}"
+          echo "moode_podcasts/__init__.py: $source"
+          echo "tag:                 $expected"
+          if [ "$source" != "$expected" ]; then
+              echo "::error::Tag $expected does not match __version__ = $source."
+              exit 1
+          fi
+
+      - name: Build the notes
+        id: notes
+        run: |
+          set -euo pipefail
+          tag="${{ steps.tag.outputs.tag }}"
+          out="$RUNNER_TEMP/notes.md"
+          raw="$RUNNER_TEMP/raw.txt"
+
+          # The previous tag: the last one reachable before this one. The ^ is
+          # essential, otherwise describe finds this very tag and the range is
+          # empty.
+          previous="$(git describe --tags --abbrev=0 "${tag}^" 2>/dev/null || true)"
+          range="${previous:+$previous..}${tag}"
+          echo "range: $range"
+
+          # PRIVACY: %s is the subject line only. Trailers (Co-Authored-By,
+          # Signed-off-by, session links) live in the body and therefore
+          # cannot reach the notes by construction. %an/%ae are deliberately
+          # absent — no names, no addresses.
+          git log --no-merges --reverse --format='%s' "$range" \
+            | sed -E \
+                -e 's#(/var)?/home/[A-Za-z0-9_.-]+#<path>#g' \
+                -e 's#/Users/[A-Za-z0-9_.-]+#<path>#g' \
+                -e 's#/run/user/[0-9]+#<path>#g' \
+                -e 's#https?://claude\.ai/[^ ]*##g' \
+                -e 's#[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}#<address>#g' \
+                -e 's#(gh[pousr]_|github_pat_)[A-Za-z0-9_]+#<token>#g' \
+                -e 's/[[:space:]]+$//' \
+            | grep -v '^[[:space:]]*$' > "$raw" || true
+
+          : > "$out"
+
+          # Breaking changes first, recognised by the exclamation mark.
+          breaking="$(grep -E '^[a-z]+(\([^)]*\))?!: ' "$raw" \
+                      | sed -E 's/^[a-z]+(\([^)]*\))?!: //' || true)"
+          if [ -n "$breaking" ]; then
+              printf '### Breaking changes\n\n' >> "$out"
+              printf '%s\n' "$breaking" | sed 's/^/- /' >> "$out"
+              printf '\n' >> "$out"
+          fi
+
+          group() {
+              local pattern="$1" heading="$2" hits
+              # The pattern must be parenthesised. One call passes an
+              # alternation, and in an extended regular expression | has the
+              # lowest precedence — without the group the anchor binds to the
+              # first branch only, so "ci" would match anywhere in a line and
+              # sed would cut it out of the middle of a word.
+              hits="$(grep -E "^(${pattern})(\([^)]*\))?!?: " "$raw" \
+                      | sed -E "s/^(${pattern})(\([^)]*\))?!?: //" || true)"
+              if [ -n "$hits" ]; then
+                  printf '### %s\n\n' "$heading" >> "$out"
+                  printf '%s\n' "$hits" | sed 's/^/- /' >> "$out"
+                  printf '\n' >> "$out"
+              fi
+          }
+
+          group 'feat'     'Added'
+          group 'fix'      'Fixed'
+          group 'perf'     'Performance'
+          group 'refactor' 'Changed'
+          group 'docs'     'Documentation'
+          group 'i18n'     'Translations'
+          group 'build|ci|chore|test|style' 'Maintenance'
+
+          # Anything without a recognised prefix goes to Other rather than
+          # being dropped — older history is not necessarily conventional.
+          rest="$(grep -vE '^(feat|fix|perf|refactor|docs|i18n|build|ci|chore|test|style)(\([^)]*\))?!?: ' \
+                  "$raw" || true)"
+          if [ -n "$rest" ]; then
+              printf '### Other\n\n' >> "$out"
+              printf '%s\n' "$rest" | sed 's/^/- /' >> "$out"
+              printf '\n' >> "$out"
+          fi
+
+          [ -s "$out" ] || printf 'No changes found in the commit history.\n\n' >> "$out"
+
+          {
+              printf '### Installation\n\n'
+              printf '```sh\n'
+              printf 'git clone https://github.com/%s.git\n' "$GITHUB_REPOSITORY"
+              printf 'cd %s\n' "${GITHUB_REPOSITORY#*/}"
+              printf 'git checkout %s\n' "$tag"
+              printf './tools/install.sh\n'
+              printf '```\n\n'
+          } >> "$out"
+
+          if [ -n "$previous" ]; then
+              printf '**Full comparison:** https://github.com/%s/compare/%s...%s\n' \
+                  "$GITHUB_REPOSITORY" "$previous" "$tag" >> "$out"
+          fi
+
+          echo "----- notes -----"; cat "$out"; echo "-----------------"
+          echo "file=$out" >> "$GITHUB_OUTPUT"
+
+      - name: Final privacy check
+        # Belt and braces: if something slipped through the filter above, stop
+        # rather than publish it.
+        run: |
+          set -euo pipefail
+          if grep -nEi 'Co-Authored-By|Signed-off-by|Claude-Session|claude\.ai/code|/home/|/var/home/|@[A-Za-z0-9.-]+\.(de|com|org|net)' \
+               "${{ steps.notes.outputs.file }}"; then
+              echo "::error::The release notes contain private data (see above)."
+              exit 1
+          fi
+          echo "clean"
+
+      - name: Source archive
+        run: |
+          set -euo pipefail
+          tag="${{ steps.tag.outputs.tag }}"
+          name="moode-podcasts-${{ steps.tag.outputs.version }}"
+          # git archive only takes what is tracked — no .venv, no local
+          # database, no work in progress.
+          git archive --format=tar.gz --prefix="$name/" \
+              -o "$RUNNER_TEMP/$name.tar.gz" "$tag"
+          ( cd "$RUNNER_TEMP" && sha256sum "$name.tar.gz" > "$name.tar.gz.sha256" )
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="${{ steps.tag.outputs.tag }}"
+          name="moode-podcasts-${{ steps.tag.outputs.version }}"
+          pre=""
+          case "$tag" in
+              *-alpha*|*-beta*|*-rc*) pre="--prerelease" ;;
+          esac
+          # --verify-tag stops gh from silently creating the tag on the
+          # default branch if it does not exist.
+          gh release create "$tag" \
+              --title "${{ steps.tag.outputs.version }}" \
+              --notes-file "${{ steps.notes.outputs.file }}" \
+              --verify-tag $pre \
+              "$RUNNER_TEMP/$name.tar.gz" \
+              "$RUNNER_TEMP/$name.tar.gz.sha256"

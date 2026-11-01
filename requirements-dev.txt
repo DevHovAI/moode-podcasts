@@ -1,0 +1,5 @@
+# Development tools. Pinned on purpose: the CI installs these exact
+# versions, so a local `just check` and a CI run cannot disagree.
+# Bump both here and in .github/workflows/ci.yml (RUFF_VERSION).
+ruff==0.16.6
+pytest==9.1.1

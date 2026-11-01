@@ -1,0 +1,76 @@
+# Starting rule set for code that has never been linted.
+#
+# Only rules that find real bugs or real dead weight. Anything that merely
+# enforces taste (mandatory docstrings, type annotations, exception style)
+# stays out — otherwise the first run drowns in messages and never gets
+# worked through.
+#
+# Rules to add once this is green, roughly by effort:
+#   SIM, PTH, PERF, ARG, TRY, EM, N, D
+
+target-version = "py311"
+line-length = 100
+indent-width = 4
+
+extend-exclude = ["po/locale", "docs", ".venv", "build", "dist"]
+
+[lint]
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes: unused imports and names, undefined names
+    "I",     # isort: import order
+    "UP",    # pyupgrade: outdated spellings
+    "B",     # bugbear: common traps
+    "C4",    # needless comprehensions
+    "PIE",   # redundant code
+    "RET",   # needless returns
+    "RSE",   # raise ... from
+    "ISC",   # implicitly concatenated strings
+    "A",     # shadowed builtins
+    "T20",   # print() — see per-file-ignores
+    "RUF",   # ruff's own rules
+]
+
+ignore = [
+    # German typography (" " – …) counts as ASCII-confusable to ruff. The
+    # comments in this codebase are German throughout; without these three
+    # there would be hundreds of messages and not one of them a bug.
+    "RUF001", "RUF002", "RUF003",
+
+    # `except Exception:` with a comment is a deliberate choice here — one
+    # broken view must not take a whole job down with it.
+    "BLE001",
+
+    # Left to the formatter, so the two do not fight over the same lines.
+    "E111", "E114", "E117", "W191",
+
+    # Forcing a ternary over if/else often reads worse.
+    "SIM108",
+
+    # dict(a=1, b=2, ...) with twenty-odd keyword arguments reads better than
+    # the same thing as a literal with quoted keys. No bug ever hid in there.
+    "C408",
+]
+
+[lint.per-file-ignores]
+# Tools and the smoke test are scripts — print() is their output.
+"tools/*.py" = ["T201", "T203", "E402"]
+"tests/*.py" = ["T201"]
+# A command line interface prints; that is its output, not a debug leftover.
+"**/__main__.py" = ["T201"]
+# GTK requires gi.require_version() to sit between the imports.
+"**/gui/*.py" = ["E402"]
+
+[lint.isort]
+known-first-party = ["moode_podcasts"]
+
+[lint.flake8-builtins]
+# i18n provides `_`; that is the usual gettext spelling, not a shadowed
+# builtin.
+builtins-ignorelist = ["_"]
+
+[format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
