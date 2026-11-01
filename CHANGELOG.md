@@ -10,6 +10,18 @@ that you could not do before. They are not a copy of the commit subjects.
 
 ## [Unreleased]
 
+### Added
+
+- Chapters: episodes with chapters (Podlove in the feed, `podcast:chapters`,
+  or ID3 chapter frames in the file) become one queue entry per chapter, so
+  moOde's next/previous buttons jump between chapters and the player shows the
+  chapter title (#4).
+
+### Fixed
+
+- Seeking and pause work for episodes. This needs a small, reversible tweak to
+  moOde's `inc/mpd.php`; see the README (#4).
+
 ### Fixed
 
 - Episodes show their title instead of the raw link in the play queue, have

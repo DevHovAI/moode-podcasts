@@ -4,7 +4,8 @@ set -eu
 [ "$(id -u)" = 0 ] || { echo "bitte mit sudo aufrufen" >&2; exit 1; }
 
 systemctl disable --now moode-podcasts-web.service moode-podcasts-sync.timer \
-    moode-podcasts-reload.path 2>/dev/null || true
+    moode-podcasts-reload.path moode-podcasts-patch.service 2>/dev/null || true
+[ -f /opt/moode-podcasts/moode_patch.py ] && python3 /opt/moode-podcasts/moode_patch.py revert
 if [ -f /var/lib/moode-podcasts/feeds.json ]; then
     python3 - <<'PY'
 import json, pathlib, sqlite3
@@ -28,7 +29,8 @@ rm -f /etc/systemd/system/moode-podcasts-web.service \
       /etc/systemd/system/moode-podcasts-sync.service \
       /etc/systemd/system/moode-podcasts-sync.timer \
       /etc/systemd/system/moode-podcasts-reload.path \
-      /etc/systemd/system/moode-podcasts-reload.service
+      /etc/systemd/system/moode-podcasts-reload.service \
+      /etc/systemd/system/moode-podcasts-patch.service
 systemctl daemon-reload
 rm -rf /opt/moode-podcasts /var/lib/moode-podcasts
 echo "moode-podcasts entfernt"

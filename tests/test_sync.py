@@ -27,6 +27,7 @@ def web(monkeypatch, rss):
         return pages[url]
 
     monkeypatch.setattr(net, "fetch", fake_fetch)
+    monkeypatch.setattr(net, "fetch_head", lambda url, n, **_kw: fake_fetch(url)[:n])
     return pages
 
 
@@ -137,3 +138,17 @@ def test_old_playlist_names_get_the_prefix(dirs, web):
     sync.sync_all(store)
     assert store.load()[0]["name"] == "Podcast · Test Cast"
     assert sorted(p.name for p in dirs["playlists"].iterdir()) == [LIST]
+
+
+def test_chapters_are_looked_up_once_per_episode(dirs, web, monkeypatch):
+    from moode_podcasts import chapters
+
+    seen = []
+    monkeypatch.setattr(
+        chapters, "find", lambda ep: seen.append(ep.url) or [(0.0, "A"), (9.0, "B")]
+    )
+    store = Store()
+    sync.subscribe(store, FEED)
+    sync.sync_all(store)
+    assert sorted(seen) == ["https://example.org/1.mp3", "https://example.org/2.mp3"]
+    assert store.load()[0]["episode_list"][0]["chapters"] == [[0.0, "A"], [9.0, "B"]]

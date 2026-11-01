@@ -15,6 +15,9 @@ class Episode:
     url: str
     published: datetime | None = None
     image: str = ""
+    # [(Start in Sekunden, Titel)] aus Podlove Simple Chapters, sonst leer
+    chapters: list[tuple[float, str]] = field(default_factory=list)
+    chapters_url: str = ""  # podcast:chapters (JSON)
 
 
 @dataclass
@@ -49,6 +52,37 @@ def _child(el, name):
 def _text(el, name) -> str:
     c = _child(el, name)
     return (c.text or "").strip() if c is not None else ""
+
+
+def seconds(text: str) -> float | None:
+    """Zeitangabe wie '01:02:03.5', '62:03' oder '3723.5' in Sekunden."""
+    try:
+        parts = [float(p) for p in text.strip().split(":")]
+    except ValueError:
+        return None
+    if not parts or len(parts) > 3 or any(p < 0 for p in parts):
+        return None
+    total = 0.0
+    for p in parts:
+        total = total * 60 + p
+    return total
+
+
+def _psc_chapters(item) -> list[tuple[float, str]]:
+    out = []
+    for el in item.iter():
+        if local(el.tag) == "chapter" and el.get("start") is not None:
+            start = seconds(el.get("start"))
+            if start is not None:
+                out.append((start, _clean(el.get("title") or "")))
+    return sorted(out)
+
+
+def _chapters_url(item) -> str:
+    for c in item:
+        if local(c.tag) == "chapters" and c.get("url", "").startswith(("http://", "https://")):
+            return c.get("url")
+    return ""
 
 
 def _clean(s: str) -> str:
@@ -107,7 +141,16 @@ def parse_feed(data: bytes) -> Podcast:
             continue
         published = next((d for t in date_tags if (d := _date(_text(it, t)))), None)
         title = _clean(_text(it, "title")) or "Episode"
-        pod.episodes.append(Episode(title, url.strip(), published, _itunes_image(it)))
+        pod.episodes.append(
+            Episode(
+                title,
+                url.strip(),
+                published,
+                _itunes_image(it),
+                _psc_chapters(it),
+                _chapters_url(it),
+            )
+        )
 
     # Neueste zuerst; Folgen ohne Datum behalten ihre Feed-Reihenfolge am Ende
     oldest = datetime.min.replace(tzinfo=UTC)

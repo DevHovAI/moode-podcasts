@@ -90,13 +90,41 @@ sudo python3 -m moode_podcasts add https://example.org/feed.xml
 sudo python3 -m moode_podcasts sync
 ```
 
+## Chapters
+
+Chapters are read from the feed (Podlove Simple Chapters or `podcast:chapters`)
+or, failing that, from the ID3 chapter frames at the start of the file. When an
+episode with chapters is added to the queue, it is split into one entry per
+chapter (MPD's `rangeid`: same file, only that portion is played). moOde's
+next/previous buttons then jump between chapters, and each entry shows the
+chapter title. An episode that is already playing is not split.
+
+## The moOde tweak
+
+moOde's `enhanceMetadata()` (`/var/www/inc/mpd.php`) already has a branch for
+podcast episodes, but it reports the artist as "Radio station". The web UI
+takes that as a radio stream: pause becomes stop and the time slider does
+nothing. moode-podcasts changes those lines so that, **for its own episodes
+only**, the artist and album tags are used instead:
+
+```php
+$isEp = ($_SESSION[$song['file']]['type'] ?? '') == 'p';
+$current['artist'] = $isEp && isset($song['Artist']) ? $song['Artist'] : DEFAULT_STATION_NAME;
+$current['album'] = $isEp && isset($song['Album']) ? $song['Album'] : $_SESSION[$song['file']]['name'];
+```
+
+- The change is applied only if the original lines match exactly; on any other
+  moOde version nothing is touched.
+- `moode-podcasts-patch.service` re-applies it at boot, in case a moOde update
+  replaced the file.
+- `sudo python3 /opt/moode-podcasts/moode_patch.py status|revert|apply`;
+  `deploy/uninstall.sh` reverts it.
+
 ## Limits
 
-moOde treats episodes like radio streams:
-
-- while playing, the second line reads "Radio station" (fixed in moOde)
 - no resume position, no "played" marker
 - seeking only works if the podcast host supports HTTP range requests (most do)
+- without the moOde tweak, episodes behave like radio streams (no seeking)
 - the web page has no login, like moOde itself — keep it in your home network
 
 ## Development
