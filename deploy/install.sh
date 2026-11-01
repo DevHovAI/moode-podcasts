@@ -6,16 +6,8 @@ set -eu
 command -v mpd >/dev/null || { echo "kein moOde? mpd fehlt" >&2; exit 1; }
 
 src="$(cd "$(dirname "$0")/.." && pwd)"
-OLD_UNITS="moode-podcasts-reload.path moode-podcasts-reload.service moode-podcasts-patch.service"
 
 systemctl stop moode-podcasts-web.service 2>/dev/null || true
-
-# Version 0.1/0.2 haben moOde verändert – das wird hier vollständig zurückgenommen
-for u in $OLD_UNITS; do
-    systemctl disable --now "$u" 2>/dev/null || true
-    rm -f "/etc/systemd/system/$u"
-done
-python3 "$src/deploy/cleanup_v02.py"
 
 rm -rf /opt/moode-podcasts.new
 mkdir -p /opt/moode-podcasts.new

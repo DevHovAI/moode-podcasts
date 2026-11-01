@@ -10,12 +10,30 @@ that you could not do before. They are not a copy of the commit subjects.
 
 ## [Unreleased]
 
+### Removed
+
+- The automatic clean-up of what versions 0.1 and 0.2 changed in moOde. To
+  upgrade from one of those, install 0.5.0 first.
+
+## [0.5.0] - 2026-11-01
+
 ### Added
 
 - **Saved for later** ("Vorgemerkt", #10): star episodes, tracks and albums to
   keep them in a list on the device. Play the whole list or append it to the
   queue; finished episodes drop out of it on their own. Shown in the Podcasts
   tab, as a home block and on its own page.
+
+### Changed
+
+- "Vormerken" (append to MPD's queue) is now called "Warteschlange" (queue),
+  in the buttons and in the player's tab.
+- Changing views closes an open episode dialog.
+
+## [0.4.0] - 2026-11-01
+
+### Added
+
 - Home screen assembled from blocks, editable in the page and shared by all
   devices (#8).
 - Music tab for moOde's local library: artists, albums, genres, recently added;
@@ -28,11 +46,10 @@ that you could not do before. They are not a copy of the commit subjects.
 
 ### Changed
 
-- "Vormerken" (append to MPD's queue) is now called "Warteschlange" (queue),
-  in the buttons and in the player's tab.
-- Changing views closes an open episode dialog.
 - One Podcasts tab with the sections New, My podcasts, Continue listening and
   Discover.
+
+## [0.3.0] - 2026-11-01
 
 ### Changed
 
@@ -48,6 +65,8 @@ that you could not do before. They are not a copy of the commit subjects.
 
 - Podcast playlists in moOde's Playlists view and chapter splitting in the queue.
 
+## [0.2.0] - 2026-11-01
+
 ### Added
 
 - Chapters: episodes with chapters (Podlove in the feed, `podcast:chapters`,
@@ -58,26 +77,17 @@ that you could not do before. They are not a copy of the commit subjects.
 ### Fixed
 
 - Seeking and pause work for episodes. This needs a small, reversible tweak to
-  moOde's `inc/mpd.php`; see the README (#4).
+  moOde's `inc/mpd.php` (#4).
 
-### Fixed
-
-- Episodes show their title instead of the raw link in the play queue, have
-  their own cover, and the player shows episode title, podcast name and cover
-  while playing (#2).
-- Image processing uses a fraction of the CPU it did; a Raspberry Pi with a
-  weak power supply could reset during the first refresh.
-
-### Changed
-
-- Podcast playlists are named "Podcast · <name>", so moOde's playlist filter
-  finds all of them with "Podcast". Existing playlists are renamed on the next
-  refresh.
+## [0.1.0] - 2026-11-01
 
 ### Added
 
 - Subscribe to podcasts on a moOde player; each podcast appears as a playlist
-  tile with cover and episode titles in moOde's Playlists view.
+  tile named "Podcast · <name>", with cover and episode titles, in moOde's
+  Playlists view.
+- Episodes show their own title and cover in the play queue and in moOde's
+  player (#2).
 - Web page on port 8090 with curated recommendations, search, and paste-a-feed.
 - Import subscriptions from podcast apps via OPML, and export them again.
 - Install and uninstall scripts with a sandboxed systemd service and a refresh
