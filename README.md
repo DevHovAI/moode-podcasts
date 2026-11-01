@@ -1,23 +1,28 @@
 # moode-podcasts
 
-Podcast subscriptions for the [moOde audio player](https://moodeaudio.org).
+A podcast and radio player page for the [moOde audio player](https://moodeaudio.org).
 
-moOde has no podcast feature and no plugin interface. It does, however, read
-episode titles and cover images from its playlists (moOde 10.3+). This small
-service uses exactly that: for every podcast you subscribe to, it writes a
-playlist with the newest episodes and the podcast's cover. They show up as
-tiles in moOde's **Playlists** view — nothing in moOde itself is modified, so
-moOde updates cannot break it.
+It runs on the moOde device and serves a mobile-friendly web page on port 8090.
+The page is a remote control: it drives moOde's MPD, so sound comes out of
+your hi-fi, and every phone, tablet or PC sees the same state. moOde itself is
+not modified.
 
-- web page on port 8090 to manage subscriptions
-- curated recommendations (German-language, mostly public broadcasters: ARD,
-  Deutschlandfunk, ORF, SRF) — subscribe with one click
-- search via the iTunes podcast directory, or paste any RSS feed address
-- import and export **OPML**, the format AntennaPod, gPodder, Kasts, Podcast
+- **Podcasts**: subscriptions, newest episodes of all of them, a page per podcast
+- **Player**: seek bar, ±30 s, chapter list (tap to jump), shownotes,
+  next/previous jump between chapters, a queue ("up next")
+- **Resume**: remembers where you stopped in every episode, shows progress and
+  "played"
+- **Radio**: all of moOde's stations with their logos, favourites first,
+  search and filter by broadcaster
+- **Discover**: curated recommendations (German-language, mostly public
+  broadcasters: ARD, Deutschlandfunk, ORF, SRF), search via the iTunes
+  directory, paste any RSS feed
+- **OPML** import and export, the format AntennaPod, gPodder, Kasts, Podcast
   Addict, Pocket Casts and others use for their subscriptions
-- feeds refresh every two hours; episodes are streamed, nothing is downloaded
+- live updates in the page (server-sent events), feeds refresh every two hours,
+  episodes are streamed
 - standard library only, no pip install on the device
-- the web page is in German for now
+- the page is in German for now
 
 ## Installation
 
@@ -29,57 +34,43 @@ cd moode-podcasts
 sudo sh deploy/install.sh
 ```
 
-Then open `http://moode.local:8090` (or your device's address).
+Then open `http://moode.local:8090` (or your device's address). On a phone,
+"add to home screen" makes it feel like an app.
 
 From a development machine with SSH access you can also run
 `just deploy pi@moode`.
 
-To remove everything again, including the generated playlists and covers:
+To remove it again: `sudo sh deploy/uninstall.sh`.
 
-```sh
-sudo sh deploy/uninstall.sh
-```
+### Upgrading from 0.1 / 0.2
+
+Earlier versions integrated into moOde's own UI (generated playlists, hidden
+rows in moOde's station table, a small tweak to `/var/www/inc/mpd.php`).
+`install.sh` removes all of that automatically (`deploy/cleanup_v02.py`);
+moOde's files are restored byte for byte.
 
 ## How it works
 
 | What | Where |
 |---|---|
 | program | `/opt/moode-podcasts` |
-| subscriptions | `/var/lib/moode-podcasts/feeds.json` |
-| playlists | `/var/lib/mpd/playlists/<Podcast>.m3u` |
-| covers | `/var/local/www/imagesw/playlist-covers/<Podcast>.jpg` |
-| episode names and covers | `cfg_radio` rows with type `p`, `/var/local/www/imagesw/radio-logos/` |
-| services | `moode-podcasts-web.service`, `moode-podcasts-sync.timer`, `moode-podcasts-reload.path` |
+| subscriptions and episode lists | `/var/lib/moode-podcasts/feeds.json` |
+| listening progress | `/var/lib/moode-podcasts/progress.json` |
+| resized cover images | `/var/lib/moode-podcasts/img/` |
+| services | `moode-podcasts-web.service`, `moode-podcasts-sync.timer` |
 
-A playlist looks like this; moOde shows the `#EXTINF` text as the episode
-title:
-
-```
-#EXTGENRE:Podcast
-#EXTIMG:local
-#EXTINF:-1,2026-10-30 · Episode title
-https://example.org/episode.mp3
-```
-
-Playlists that were not created by moode-podcasts are never touched; on a
-name clash a number is appended.
-
-moOde only knows names and logos of stream URLs from its station table
-`cfg_radio`. So every current episode also gets a row there, with type `p`,
-which moOde's Radio view does not display — the same trick moOde's own radio
-browser uses for streams it plays. That gives the play queue the episode name
-and the player the episode cover. A small watcher additionally sets the
-`Title`, `Artist` and `Album` tags of queued episodes in MPD (`addtagid`), and
-a path unit reloads moOde's PHP session as `www-data` whenever the station
-table changed. Rows of episodes that drop out of the newest ones are removed
-again (unless they are still queued).
-
-To find podcasts in moOde, use the filter field of the **Playlists** view:
-moOde's search only covers the local music library.
-
-The services run as root so the files belong to root like moOde's own, but
-inside a systemd sandbox without any capabilities, at low priority, limited to
-half a CPU core, and with write access to the directories above only.
+- **Playback** uses MPD's queue. Playing an episode inserts it right after the
+  current item, so whatever else is queued in moOde stays; the queue keeps
+  playing when the page is closed.
+- **Chapters** come from the feed (Podlove Simple Chapters, `podcast:chapters`)
+  or the ID3 chapter frames at the start of the file. They are looked up for
+  the newest episodes during the refresh, for older ones when first played.
+- **Radio stations** are read (never written) from moOde's station table; the
+  logos are served by moOde itself.
+- The services run as root but without any capabilities, inside a systemd
+  sandbox with write access to `/var/lib/moode-podcasts` only, at low priority
+  and limited to half a CPU core (a Raspberry Pi with a weak power supply can
+  reset under sustained full load).
 
 Command line, on the device:
 
@@ -90,54 +81,30 @@ sudo python3 -m moode_podcasts add https://example.org/feed.xml
 sudo python3 -m moode_podcasts sync
 ```
 
-## Chapters
-
-Chapters are read from the feed (Podlove Simple Chapters or `podcast:chapters`)
-or, failing that, from the ID3 chapter frames at the start of the file. When an
-episode with chapters is added to the queue, it is split into one entry per
-chapter (MPD's `rangeid`: same file, only that portion is played). moOde's
-next/previous buttons then jump between chapters, and each entry shows the
-chapter title. An episode that is already playing is not split.
-
-## The moOde tweak
-
-moOde's `enhanceMetadata()` (`/var/www/inc/mpd.php`) already has a branch for
-podcast episodes, but it reports the artist as "Radio station". The web UI
-takes that as a radio stream: pause becomes stop and the time slider does
-nothing. moode-podcasts changes those lines so that, **for its own episodes
-only**, the artist and album tags are used instead:
-
-```php
-$isEp = ($_SESSION[$song['file']]['type'] ?? '') == 'p';
-$current['artist'] = $isEp && isset($song['Artist']) ? $song['Artist'] : DEFAULT_STATION_NAME;
-$current['album'] = $isEp && isset($song['Album']) ? $song['Album'] : $_SESSION[$song['file']]['name'];
-```
-
-- The change is applied only if the original lines match exactly; on any other
-  moOde version nothing is touched.
-- `moode-podcasts-patch.service` re-applies it at boot, in case a moOde update
-  replaced the file.
-- `sudo python3 /opt/moode-podcasts/moode_patch.py status|revert|apply`;
-  `deploy/uninstall.sh` reverts it.
-
 ## Limits
 
-- no resume position, no "played" marker
-- seeking only works if the podcast host supports HTTP range requests (most do)
-- without the moOde tweak, episodes behave like radio streams (no seeking)
-- the web page has no login, like moOde itself — keep it in your home network
+- Far jumps can take a while: moOde's MPD decodes MP3 with `mad`, which reads
+  up to the target position (about 20 s for a jump of an hour). The page shows
+  "Springe …" meanwhile. MPD's `mpg123` decoder seeks in about a second; you
+  can switch to it with moOde's developer tweak (`/etc/mpd.custom.conf`:
+  `decoder { plugin "mad" enabled "no" }`). moode-podcasts does not change
+  moOde's configuration itself.
+- Seeking needs a podcast host with HTTP range requests (nearly all have them).
+- No login, like moOde itself – keep it in your home network.
 
 ## Development
 
 ```sh
 just              # list the recipes
 just check        # lint, format check, tests — everything the CI runs
-just run serve    # run the web page locally (set the MOODE_PODCASTS_* paths first)
+just run serve    # run the page locally (point MOODE_PODCASTS_* at test data/MPD)
 just recommendations   # rebuild the recommendation list (needs network)
 ```
 
-Local runs can be pointed at scratch directories with
-`MOODE_PODCASTS_DATA`, `MOODE_PODCASTS_PLAYLISTS` and `MOODE_PODCASTS_COVERS`.
+Environment variables for local runs: `MOODE_PODCASTS_DATA`,
+`MOODE_PODCASTS_DB` (moOde's database, for the stations),
+`MOODE_PODCASTS_MPD_HOST`, `MOODE_PODCASTS_MPD_PORT`. A silent MPD with
+`audio_output { type "null" }` on another port is handy for testing.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow.
 

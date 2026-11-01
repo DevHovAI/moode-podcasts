@@ -7,13 +7,13 @@ Wants=network-online.target
 Environment=PYTHONPATH=/opt/moode-podcasts
 ExecStart=/usr/bin/python3 -m moode_podcasts serve --port 8090
 Restart=on-failure
-# Läuft als root, damit die Dateien wie moOdes eigene root gehören – aber ohne
-# jede Sonderfähigkeit und mit Schreibrecht nur in diesen Ordnern.
+# Läuft als root, aber ohne jede Sonderfähigkeit und mit Schreibrecht nur in
+# seinem Datenordner; moOdes Datenbank wird nur gelesen (Radiosender).
 CapabilityBoundingSet=
 AmbientCapabilities=
 NoNewPrivileges=yes
 ProtectSystem=strict
-ReadWritePaths=/var/lib/moode-podcasts /var/lib/mpd/playlists /var/local/www/imagesw/playlist-covers /var/local/www/imagesw/radio-logos /var/local/www/db
+ReadWritePaths=/var/lib/moode-podcasts
 ProtectHome=yes
 PrivateTmp=yes
 PrivateDevices=yes

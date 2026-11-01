@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import select
 import socket
 
 from moode_podcasts import paths
@@ -49,6 +50,27 @@ class Mpd:
             if songs:
                 songs[-1].setdefault(key, value)
         return songs
+
+    def idle(self, subsystems: str, timeout: float) -> list[str]:
+        """Auf Änderungen warten (höchstens timeout Sekunden); gibt die Bereiche zurück."""
+        self.f.write(f"idle {subsystems}\n".encode())
+        self.f.flush()
+        ready, _, _ = select.select([self.sock], [], [], timeout)
+        if not ready:
+            self.f.write(b"noidle\n")
+            self.f.flush()
+        out = []
+        while True:  # Antwort auf idle (bzw. noidle) bis OK lesen
+            raw = self.f.readline()
+            if not raw:
+                raise MpdError("Verbindung zu MPD abgebrochen")
+            text = raw.decode("utf-8", "replace").rstrip("\n")
+            if text == "OK":
+                return out
+            if text.startswith("ACK"):
+                raise MpdError(text)
+            if text.startswith("changed: "):
+                out.append(text[9:])
 
     def close(self) -> None:
         try:
