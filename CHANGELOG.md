@@ -10,6 +10,8 @@ that you could not do before. They are not a copy of the commit subjects.
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-11-01
+
 ### Removed
 
 - The automatic clean-up of what versions 0.1 and 0.2 changed in moOde. To
@@ -92,3 +94,6 @@ that you could not do before. They are not a copy of the commit subjects.
 - Import subscriptions from podcast apps via OPML, and export them again.
 - Install and uninstall scripts with a sandboxed systemd service and a refresh
   timer.
+
+[Unreleased]: https://github.com/DevHovAI/moode-podcasts/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/DevHovAI/moode-podcasts/releases/tag/v0.5.1
