@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Podcasts · moOde</title>
+<style>
+  :root { --bg:#1f1f1f; --card:#2b2b2b; --fg:#e8e8e8; --dim:#9a9a9a; --acc:#d4a72c; --err:#e06c5a; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.4 system-ui, sans-serif; background:var(--bg); color:var(--fg); }
+  header { padding:14px 18px 0; display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; }
+  header h1 { font-size:20px; margin:0; }
+  header a { color:var(--dim); font-size:13px; }
+  nav { display:flex; gap:4px; padding:12px 14px 0; border-bottom:1px solid #3a3a3a; overflow-x:auto; }
+  nav button { background:none; border:0; color:var(--dim); padding:10px 12px; font:inherit; cursor:pointer;
+               border-bottom:2px solid transparent; white-space:nowrap; }
+  nav button.on { color:var(--fg); border-color:var(--acc); }
+  main { padding:16px; max-width:1100px; margin:auto; }
+  section { display:none; } section.on { display:block; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:12px; }
+  .card { background:var(--card); border-radius:8px; padding:10px; display:flex; gap:10px; align-items:flex-start; }
+  .card img { width:64px; height:64px; border-radius:4px; object-fit:cover; background:#444; flex:none; }
+  .card .t { font-weight:600; } .card .s { color:var(--dim); font-size:13px; }
+  .card .err { color:var(--err); font-size:13px; word-break:break-word; }
+  .card .grow { flex:1; min-width:0; }
+  button.act { background:var(--acc); color:#111; border:0; border-radius:5px; padding:6px 10px; font:inherit;
+               font-size:13px; cursor:pointer; margin-top:6px; }
+  button.act.sec { background:#444; color:var(--fg); }
+  button.act:disabled { opacity:.5; cursor:default; }
+  h2 { font-size:16px; margin:22px 0 10px; color:var(--acc); }
+  input[type=text], input[type=url] { width:100%; padding:9px; border-radius:5px; border:1px solid #444;
+               background:#151515; color:var(--fg); font:inherit; }
+  form.row { display:flex; gap:8px; margin-bottom:14px; } form.row input { flex:1; }
+  form.row button { margin:0; }
+  .msg { color:var(--dim); margin:10px 0; } .msg.err { color:var(--err); }
+  label.pick { display:flex; gap:8px; align-items:center; padding:5px 0; }
+  .bar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Podcasts</h1>
+  <a id="moode" href="/">zurück zu moOde</a>
+</header>
+<nav>
+  <button data-tab="mine" class="on">Meine Podcasts</button>
+  <button data-tab="recs">Empfehlungen</button>
+  <button data-tab="search">Suchen</button>
+  <button data-tab="io">Import / Export</button>
+</nav>
+<main>
+  <section id="mine" class="on">
+    <div class="bar">
+      <button class="act" id="syncall">Alle aktualisieren</button>
+      <span class="msg" id="minemsg"></span>
+    </div>
+    <div class="grid" id="subs"></div>
+    <p class="msg">Die Podcasts erscheinen in moOde unter <b>Playlists</b> – je Podcast eine Kachel mit den neuesten Folgen.
+      Aktualisiert wird automatisch alle zwei Stunden.</p>
+  </section>
+
+  <section id="recs"><div id="reclist"></div></section>
+
+  <section id="search">
+    <form class="row" id="searchform">
+      <input type="text" id="q" placeholder="Podcast suchen, z. B. »Lage der Nation«">
+      <button class="act">Suchen</button>
+    </form>
+    <form class="row" id="urlform">
+      <input type="url" id="feedurl" placeholder="… oder Feed-Adresse (RSS) direkt einfügen">
+      <button class="act">Abonnieren</button>
+    </form>
+    <div class="msg" id="searchmsg"></div>
+    <div class="grid" id="results"></div>
+  </section>
+
+  <section id="io">
+    <h2>Aus einer Podcast-App übernehmen</h2>
+    <p class="msg">In der App die Abos als <b>OPML</b> exportieren (AntennaPod: Einstellungen → Import/Export,
+      gPodder: Abonnements → Exportieren, Kasts, Podcast Addict, Pocket Casts …) und die Datei hier wählen.</p>
+    <input type="file" id="opmlfile" accept=".opml,.xml,text/xml,text/x-opml">
+    <div id="opmlpreview"></div>
+    <h2>Zurück in eine App</h2>
+    <p class="msg">Alle Abos als OPML-Datei herunterladen und in der App importieren.</p>
+    <a href="/api/opml"><button class="act sec">OPML herunterladen</button></a>
+  </section>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let subs = [];
+
+$("#moode").href = `${location.protocol}//${location.hostname}/`;
+
+async function api(path, opts = {}) {
+  opts.headers = Object.assign({"X-Moode-Podcasts": "1"}, opts.headers || {});
+  const r = await fetch(path, opts);
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || r.statusText);
+  return data;
+}
+const json = body => ({method: "POST", body: JSON.stringify(body), headers: {"Content-Type": "application/json"}});
+const subscribed = url => subs.some(s => s.url === url);
+
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("nav button, section").forEach(e => e.classList.remove("on"));
+  b.classList.add("on"); $("#" + b.dataset.tab).classList.add("on");
+});
+
+function card(p, button) {
+  return `<div class="card"><img src="${esc(p.image)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">
+    <div class="grow"><div class="t">${esc(p.title)}</div>
+    <div class="s">${esc(p.author || p.description || "")}</div>${button}</div></div>`;
+}
+
+function subButton(p) {
+  return subscribed(p.url)
+    ? `<button class="act sec" disabled>Abonniert</button>`
+    : `<button class="act" data-sub="${esc(p.url)}" data-title="${esc(p.title)}">Abonnieren</button>`;
+}
+
+async function subscribe(btn) {
+  btn.disabled = true; btn.textContent = "Wird geholt …";
+  try {
+    await api("/api/subscriptions", json({url: btn.dataset.sub}));
+    btn.textContent = "Abonniert"; btn.classList.add("sec");
+    await loadSubs();
+  } catch (e) { btn.disabled = false; btn.textContent = "Fehler – nochmal"; alert(e.message); }
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("button[data-sub]"); if (b) subscribe(b);
+  const d = e.target.closest("button[data-del]"); if (d) unsubscribe(d);
+});
+
+async function unsubscribe(btn) {
+  if (!confirm(`»${btn.dataset.title}« abbestellen? Die Playlist in moOde verschwindet.`)) return;
+  await api("/api/subscriptions?url=" + encodeURIComponent(btn.dataset.del), {method: "DELETE"});
+  await loadSubs();
+}
+
+async function loadSubs() {
+  subs = await api("/api/subscriptions");
+  $("#subs").innerHTML = subs.length ? subs.map(s => {
+    const when = s.last_sync ? new Date(s.last_sync * 1000).toLocaleString("de-DE") : "noch nie";
+    return `<div class="card"><img src="${esc(s.image_src || "")}" alt="" onerror="this.style.visibility='hidden'">
+      <div class="grow"><div class="t">${esc(s.name)}</div>
+      <div class="s">${s.episodes ?? 0} Folgen · aktualisiert ${esc(when)}</div>
+      ${s.error ? `<div class="err">${esc(s.error)}</div>` : ""}
+      <button class="act sec" data-del="${esc(s.url)}" data-title="${esc(s.name)}">Abbestellen</button></div></div>`;
+  }).join("") : `<p class="msg">Noch nichts abonniert – schau bei den Empfehlungen oder such einen Podcast.</p>`;
+  renderRecs();
+}
+
+let recs = [];
+function renderRecs() {
+  const cats = [...new Set(recs.map(r => r.category))];
+  $("#reclist").innerHTML = cats.map(c => `<h2>${esc(c)}</h2><div class="grid">${
+    recs.filter(r => r.category === c).map(r => card(r, subButton(r))).join("")}</div>`).join("");
+}
+
+$("#syncall").onclick = async () => {
+  await api("/api/sync", {method: "POST"});
+  $("#minemsg").textContent = "Läuft im Hintergrund – gleich neu laden.";
+  setTimeout(() => { loadSubs(); $("#minemsg").textContent = ""; }, 15000);
+};
+
+$("#searchform").onsubmit = async e => {
+  e.preventDefault();
+  const q = $("#q").value.trim(); if (!q) return;
+  $("#searchmsg").textContent = "Suche …"; $("#results").innerHTML = "";
+  try {
+    const res = await api("/api/search?q=" + encodeURIComponent(q));
+    $("#searchmsg").textContent = res.length ? "" : "Nichts gefunden.";
+    $("#results").innerHTML = res.map(r => card(r, subButton(r))).join("");
+  } catch (err) { $("#searchmsg").textContent = "Suche fehlgeschlagen: " + err.message; }
+};
+
+$("#urlform").onsubmit = async e => {
+  e.preventDefault();
+  const url = $("#feedurl").value.trim(); if (!url) return;
+  $("#searchmsg").textContent = "Feed wird geholt …";
+  try {
+    const s = await api("/api/subscriptions", json({url}));
+    $("#searchmsg").textContent = `»${s.name}« abonniert.`; $("#feedurl").value = "";
+    await loadSubs();
+  } catch (err) { $("#searchmsg").textContent = "Ging nicht: " + err.message; }
+};
+
+$("#opmlfile").onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  const box = $("#opmlpreview");
+  box.innerHTML = `<p class="msg">Lese Datei …</p>`;
+  try {
+    const found = await api("/api/opml/preview", {method: "POST", body: await f.arrayBuffer()});
+    if (!found.length) { box.innerHTML = `<p class="msg err">Keine Podcasts in der Datei gefunden.</p>`; return; }
+    box.innerHTML = `<p class="msg">${found.length} Podcasts gefunden:</p>` + found.map((p, i) =>
+      `<label class="pick"><input type="checkbox" data-i="${i}" ${p.subscribed ? "disabled" : "checked"}>
+       ${esc(p.title)} ${p.subscribed ? "<span class='s'>(schon abonniert)</span>" : ""}</label>`).join("") +
+      `<button class="act" id="doimport">Ausgewählte abonnieren</button>`;
+    $("#doimport").onclick = async ev => {
+      const urls = [...box.querySelectorAll("input:checked")].map(c => found[c.dataset.i]);
+      ev.target.disabled = true; ev.target.textContent = `Hole ${urls.length} Feeds …`;
+      const r = await api("/api/opml/import", json({urls}));
+      box.innerHTML = `<p class="msg">${r.imported.length} abonniert.</p>` + r.failed.map(f =>
+        `<p class="msg err">${esc(f.url)}: ${esc(f.error)}</p>`).join("");
+      await loadSubs();
+    };
+  } catch (err) { box.innerHTML = `<p class="msg err">${esc(err.message)}</p>`; }
+};
+
+(async () => {
+  recs = await api("/api/recommendations");
+  await loadSubs();
+})();
+</script>
+</body>
+</html>

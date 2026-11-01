@@ -1,0 +1,26 @@
+[Unit]
+Description=moode-podcasts feed refresh
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Environment=PYTHONPATH=/opt/moode-podcasts
+ExecStart=/usr/bin/python3 -m moode_podcasts sync
+Type=oneshot
+# Läuft als root, damit die Dateien wie moOdes eigene root gehören – aber ohne
+# jede Sonderfähigkeit und mit Schreibrecht nur in diesen drei Ordnern.
+CapabilityBoundingSet=
+AmbientCapabilities=
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=/var/lib/moode-podcasts /var/lib/mpd/playlists /var/local/www/imagesw/playlist-covers
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+MemoryMax=150M
+
