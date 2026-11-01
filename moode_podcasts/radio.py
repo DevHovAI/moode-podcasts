@@ -6,8 +6,8 @@ import sqlite3
 
 from moode_podcasts import paths
 
-# r = normal, f/fb = Favorit; h (versteckt), rb (Radio-Browser, vorübergehend) und
-# p (Folgen aus moode-podcasts 0.2) bleiben draußen
+# r = normal, f/fb = Favorit; h (versteckt) und rb (Radio-Browser, vorübergehend)
+# bleiben draußen
 SHOWN = ("r", "f", "fb")
 
 # moOde pflegt Genres und Sprachen englisch – deutsche Begriffe für die Suche

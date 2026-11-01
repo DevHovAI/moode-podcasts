@@ -23,8 +23,7 @@ requests, release notes — is English.
   moOde; nothing gets pip-installed there. Pillow is used if present (it is
   on moOde), never required.
 - **moOde is not modified** (since 0.3). We only talk to MPD and read moOde's
-  `cfg_radio`. `deploy/cleanup_v02.py` removes what 0.1/0.2 changed; keep it
-  idempotent and byte-exact.
+  `cfg_radio`.
 - MPD's queue is the queue: insert after the current song, never clear it.
 - MPD 0.24 filters have **no OR** and fold case only for ASCII: see
   `library._find_artist` and the search variants; the fake MPD in

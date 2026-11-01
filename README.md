@@ -54,13 +54,6 @@ From a development machine with SSH access you can also run
 
 To remove it again: `sudo sh deploy/uninstall.sh`.
 
-### Upgrading from 0.1 / 0.2
-
-Earlier versions integrated into moOde's own UI (generated playlists, hidden
-rows in moOde's station table, a small tweak to `/var/www/inc/mpd.php`).
-`install.sh` removes all of that automatically (`deploy/cleanup_v02.py`);
-moOde's files are restored byte for byte.
-
 ## How it works
 
 | What | Where |

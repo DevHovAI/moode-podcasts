@@ -1,5 +1,5 @@
 #!/bin/sh
-# Entfernt moode-podcasts. moOde selbst bleibt unverändert (seit Version 0.3).
+# Entfernt moode-podcasts. moOde selbst wird nie verändert.
 set -eu
 [ "$(id -u)" = 0 ] || { echo "bitte mit sudo aufrufen" >&2; exit 1; }
 

@@ -35,8 +35,7 @@ def episode_dict(ep: Episode, prev: dict | None = None) -> dict:
 def _episodes(sub: dict, pod: Podcast) -> list[dict]:
     prev = sub.get("episodes")
     old = {e["url"]: e for e in prev} if isinstance(prev, list) else {}
-    # Abos aus 0.1/0.2 tragen noch limit 15
-    eps = pod.episodes[: max(sub.get("limit", 0), DEFAULT_LIMIT)]
+    eps = pod.episodes[:DEFAULT_LIMIT]
     out = [episode_dict(ep, old.get(ep.url)) for ep in eps]
     lookups = 0
     for ep, d in zip(eps, out, strict=True):
@@ -73,7 +72,7 @@ def subscribe(store: Store, url: str, title: str = "") -> dict:
     with store.edit() as subs:
         if existing := find(subs, url):
             return existing
-        subs.append({"url": url, "title": title or pod.title, "limit": DEFAULT_LIMIT})
+        subs.append({"url": url, "title": title or pod.title})
     sync_one(store, url)
     return find(store.load(), url) or {"url": url}
 
