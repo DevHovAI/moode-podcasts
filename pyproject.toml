@@ -1,0 +1,45 @@
+# Describes the project. Deployment is deploy/install.sh on the moOde device;
+# the package needs nothing beyond the standard library.
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "moode-podcasts"
+description = "Podcast subscriptions for the moOde audio player"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "DevHovAI" }]
+dynamic = ["version"]
+
+dependencies = []
+
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Topic :: Multimedia :: Sound/Audio :: Players",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+]
+
+[project.optional-dependencies]
+dev = ["ruff==0.16.6", "pytest==9.1.1"]
+
+[project.urls]
+Source = "https://github.com/DevHovAI/moode-podcasts"
+Issues = "https://github.com/DevHovAI/moode-podcasts/issues"
+
+[tool.setuptools.dynamic]
+# setuptools >= 61 reads this via AST, without importing the package.
+version = { attr = "moode_podcasts.__version__" }
+
+[tool.setuptools]
+packages = ["moode_podcasts"]
+
+[tool.setuptools.package-data]
+moode_podcasts = ["static/*.html", "data/*.json"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = ["-ra", "--strict-markers", "--strict-config", "--import-mode=importlib"]

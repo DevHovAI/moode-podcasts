@@ -1,0 +1,314 @@
+[
+ {
+  "title": "11KM: der tagesschau-Podcast",
+  "author": "tagesschau",
+  "category": "News",
+  "description": "One news story, explained in depth",
+  "url": "https://www.tagesschau.de/multimedia/podcasts/11km/index~podcast.xml",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/da/cd/3c/dacd3c03-20e7-e0a2-db59-c80bb013fce6/mza_13975641150493506875.jpg/100x100bb.jpg"
+ },
+ {
+  "title": "Der Tag",
+  "author": "Deutschlandfunk",
+  "category": "News",
+  "description": "The day's main topic from Dlf",
+  "url": "https://www.deutschlandfunk.de/podcast-104.xml",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts211/v4/ab/c3/55/abc3559e-3820-f436-3911-4a99c4c6ad30/mza_12286003691346138071.jpg/100x100bb.jpg"
+ },
+ {
+  "title": "tagesschau: Die 20 Uhr Nachrichten (Audio)",
+  "author": "tagesschau",
+  "category": "News",
+  "description": "The tagesschau news in audio",
+  "url": "https://www.tagesschau.de/multimedia/sendung/tagesschau_20_uhr/podcast-ts2000-audio-100~podcast.xml",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts211/v4/ec/df/07/ecdf075b-c158-adb3-b9d8-dc33a5518b01/mza_17864003101634814089.jpg/100x100bb.jpg"
+ },
+ {
+  "title": "Echo der Zeit",
+  "author": "Schweizer Radio und Fernsehen (SRF)",
+  "category": "News",
+  "description": "Swiss evening news magazine",
+  "url": "https://www.srf.ch/feed/podcast/sd/28549e81-c453-4671-92ad-cb28796d06a8.xml",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/91/51/f5/9151f5c8-97b2-43c1-d728-1850b4311aaf/mza_10466666821884933927.jpg/100x100bb.jpg"
+ },
+ {
+  "title": "News Plus – das Thema des Tages in 15 Minuten",
+  "author": "Schweizer Radio und Fernsehen (SRF)",
+  "category": "News",
+  "description": "Swiss topic of the day in 15 minutes",
+  "url": "https://www.srf.ch/feed/podcast/sd/cef54868-809e-4c26-80c3-0e6475cd6479.xml",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts211/v4/b0/14/8a/b0148a2d-b5b3-2dba-89f5-b820b6512aaf/mza_6417331016909684428.jpg/100x100bb.jpg"
+ },
+ {
+  "title": "Ö1 Journale",
+  "author": "ORF Ö1",
+  "category": "News",
+  "description": "Austrian radio news journals",
+  "url": "https://podcast.orf.at/podcast/oe1/oe1_journale/oe1_journale.xml",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts126/v4/a0/49/70/a049700a-d4d7-a297-d6d2-b35f94b41f48/mza_9752472994428717427.jpg/100x100bb.jpg"
+ },
+ {
+  "title": "Was jetzt?",
+  "author": "DIE ZEIT",
+  "category": "News",
+  "description": "Daily news podcast from DIE ZEIT",
+  "url": "https://feeds.simplecast.com/Xtqjn37O",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/4f/4c/15/4f4c153d-b67a-4382-de92-07b5833d5f62/mza_9588800763383016553.jpg/100x100bb.jpg"
+ },
+ {
+  "title": "Lage der Nation - der Politik-Podcast aus Berlin",
+  "author": "Philip Banse & Ulf Buermeyer",
+  "category": "Politics",
+  "description": "Weekly politics talk",
+  "url": "https://feeds.lagedernation.org/feeds/ldn-mp3.xml",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts113/v4/da/72/0b/da720b3e-9cb3-0239-fad9-0f80d5daff10/mza_7473842586054974690.png/100x100bb.jpg"
+ },
+ {
+  "title": "Hintergrund",
+  "author": "Deutschlandfunk",
+  "category": "Politics",
+  "description": "Background on politics",
+  "url": "https://www.deutschlandfunk.de/hintergrund-102.xml",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/4b/e1/54/4be154cd-6466-e1ad-960c-be4aca51bd1a/mza_15105765177156273404.jpg/100x100bb.jpg"
+ },
+ {
+  "title": "Interview der Woche",
+  "author": "Deutschlandfunk",
+  "category": "Politics",
+  "description": "Long political interview",
+  "url": "https://www.deutschlandfunk.de/interview-der-woche-102.xml",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts211/v4/4a/1d/65/4a1d65a3-4c5b-8ae5-1894-89d4165ba8fd/mza_7801807523948863625.jpg/100x100bb.jpg"
+ },
+ {
+  "title": "Quarks Daily",
+  "author": "Quarks",
+  "category": "Science",
+  "description": "Science in 15 minutes",
+  "url": "https://www1.wdr.de/mediathek/audio/daily-quarks/daily-quarks-podcast-104.podcast",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts211/v4/80/df/0a/80df0a51-a03c-4d88-be79-5218e7b96513/mza_2279849573389052619.jpg/100x100bb.jpg"
+ },
+ {
+  "title": "Forschung aktuell",
+  "author": "Deutschlandfunk",
+  "category": "Science",
+  "description": "Daily science news",
+  "url": "https://www.deutschlandfunk.de/forschung-aktuell-102.xml",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts211/v4/bc/69/30/bc69301b-7045-a9cf-6991-ebf1c922c207/mza_13006549008827262016.jpg/100x100bb.jpg"
+ },
+ {
+  "title": "Radiowissen",
+  "author": "Bayerischer Rundfunk",
+  "category": "Science",
+  "description": "Knowledge, history, nature",
+  "url": "https://feeds.br.de/radiowissen/feed.xml",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/a0/52/88/a05288f3-ef8c-aea9-eace-9d8b0aab99ac/mza_5642421412307281348.jpeg/100x100bb.jpg"
+ },
+ {
+  "title": "IQ - Wissenschaft und Forschung",
+  "author": "Bayerischer Rundfunk",
+  "category": "Science",
+  "description": "Science magazine",
+  "url": "https://feeds.br.de/iq-wissenschaft-und-forschung/feed.xml",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts115/v4/e1/f1/02/e1f1026c-73ab-fce8-7d88-caf94e30ba80/mza_16406768264366407060.jpeg/100x100bb.jpg"
+ },
+ {
+  "title": "Synapsen – ein Wissenschaftspodcast",
+  "author": "NDR Info",
+  "category": "Science",
+  "description": "Science podcast from NDR Info",
+  "url": "https://www.ndr.de/nachrichten/info/podcast2994.xml",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/e0/39/23/e03923e3-d3dc-1d7e-4b1f-bc8632fb7bd4/mza_7572677558829562263.jpg/100x100bb.jpg"
+ },
+ {
+  "title": "Methodisch inkorrekt!",
+  "author": "Methodisch inkorrekt!",
+  "category": "Science",
+  "description": "Physicists talk science",
+  "url": "https://minkorrekt.podigee.io/feed/mp3",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts125/v4/8f/59/70/8f597022-87e7-b4a9-95a3-be5ec2e6e1a0/mza_10453830350714488695.jpg/100x100bb.jpg"
+ },
+ {
+  "title": "Geschichten aus der Geschichte",
+  "author": "Richard Hemmer und Daniel Meßner",
+  "category": "History",
+  "description": "Two historians tell stories",
+  "url": "https://geschichten-aus-der-geschichte.podigee.io/feed/mp3",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts122/v4/85/1a/a0/851aa005-ab82-58db-77ee-e72334245c6a/mza_16313729734616176279.jpg/100x100bb.jpg"
+ },
+ {
+  "title": "WDR Zeitzeichen",
+  "author": "WDR",
+  "category": "History",
+  "description": "What happened on this day",
+  "url": "https://www1.wdr.de/mediathek/audio/zeitzeichen/zeitzeichen-podcast-100.podcast",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts211/v4/8f/fe/5d/8ffe5da4-2528-9d21-19e1-bb8cd9bd16db/mza_16797865198916784236.jpg/100x100bb.jpg"
+ },
+ {
+  "title": "Terra X History - Der Podcast",
+  "author": "ZDF - Terra X",
+  "category": "History",
+  "description": "History podcast from ZDF",
+  "url": "https://cdn.julephosting.de/podcasts/1357-terra-x-history-der-podcast/feed.rss",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts211/v4/a7/19/5d/a7195dfd-228b-fdb6-20dd-e1825b043295/mza_6706893810894180775.jpg/100x100bb.jpg"
+ },
+ {
+  "title": "WDR 5 Das philosophische Radio",
+  "author": "WDR 5",
+  "category": "Culture",
+  "description": "Philosophy with listeners",
+  "url": "https://www1.wdr.de/mediathek/audio/wdr5/wdr5-das-philosophische-radio/dasphilosophischeradio100.podcast",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/2d/32/c5/2d32c5c6-dfa4-fbcc-c708-0d64eb140345/mza_13880059099559200735.jpg/100x100bb.jpg"
+ },
+ {
+  "title": "Sein und Streit",
+  "author": "Deutschlandfunk Kultur",
+  "category": "Culture",
+  "description": "Philosophy magazine",
+  "url": "https://www.deutschlandfunkkultur.de/sein-und-streit-das-philosophiemagazin-102.xml",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/b7/be/c2/b7bec26b-6c77-bb56-4dbb-3590234eaee6/mza_13175346140396344143.jpg/100x100bb.jpg"
+ },
+ {
+  "title": "Radiofeature",
+  "author": "Bayerischer Rundfunk",
+  "category": "Culture",
+  "description": "Radio documentaries from BR",
+  "url": "https://feeds.br.de/radiofeature/feed.xml",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts114/v4/be/4a/8e/be4a8e32-4994-90d4-b800-6777d3a38f14/mza_1566796153951231617.jpeg/100x100bb.jpg"
+ },
+ {
+  "title": "SWR Kultur lesenswert - Literatur",
+  "author": "SWR",
+  "category": "Culture",
+  "description": "Books and literature",
+  "url": "https://www.swr.de/~podcast/swrkultur/programm/podcast-lesenswert-100.xml",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts211/v4/a8/38/fc/a838fcbd-a115-32ee-02a9-8566a9f52976/mza_9350626990759136679.jpg/100x100bb.jpg"
+ },
+ {
+  "title": "Kalk & Welk - Die fabelhaften Boomer Boys",
+  "author": "radioeins (rbb)",
+  "category": "Comedy",
+  "description": "Two old men talk about life",
+  "url": "https://www.radioeins.de/archiv/podcast/kalk_welk.xml/feed=podcast.xml",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts116/v4/45/85/80/4585806e-94f2-4b14-1613-fca3c47f0eaa/mza_16510429749696926930.png/100x100bb.jpg"
+ },
+ {
+  "title": "Hotel Matze",
+  "author": "Matze Hielscher & Mit Vergnügen",
+  "category": "Comedy",
+  "description": "Long conversations with guests",
+  "url": "https://hotelmatze.podigee.io/feed/mp3",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts211/v4/8d/a1/17/8da117bb-470e-8964-48fb-25c145dd290d/mza_7149095789878383485.jpg/100x100bb.jpg"
+ },
+ {
+  "title": "WDR 5 Satire Deluxe",
+  "author": "WDR 5",
+  "category": "Comedy",
+  "description": "Weekly satire from WDR 5",
+  "url": "https://www1.wdr.de/mediathek/audio/wdr5/wdr5-satire-deluxe/satiredeluxe100.podcast",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts211/v4/0e/16/4d/0e164d2c-ad9e-59df-2520-5253aee9a2ec/mza_10286862694586398337.jpg/100x100bb.jpg"
+ },
+ {
+  "title": "Verbrechen – die großen Fälle",
+  "author": "DIE ZEIT",
+  "category": "True crime",
+  "description": "Crime cases from DIE ZEIT",
+  "url": "https://feeds.simplecast.com/GyosGlXZ",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts211/v4/4b/7b/90/4b7b9041-95bd-8661-ae4d-acf6488ecb88/mza_1169008573740313400.jpg/100x100bb.jpg"
+ },
+ {
+  "title": "Sprechen wir über Mord?! Der SWR Kultur True Crime Podcast",
+  "author": "SWR Kultur",
+  "category": "True crime",
+  "description": "True crime from SWR",
+  "url": "https://www.swr.de/~podcast/swrkultur/leben-und-gesellschaft/podcast-sprechen-wir-ueber-mord-100.xml",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts211/v4/9b/51/f6/9b51f6f4-ce63-48c3-1fb6-b9be16ccf8f8/mza_13360061041056857923.jpeg/100x100bb.jpg"
+ },
+ {
+  "title": "Mordlust",
+  "author": "Paulina Krasa & Laura Wohlers",
+  "category": "True crime",
+  "description": "Two journalists discuss real cases",
+  "url": "https://mordlust-podcast.podigee.io/feed/mp3",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts211/v4/33/fd/32/33fd32f2-d7ab-c1c8-07d8-e9453cfb960a/mza_15001598499224287928.jpg/100x100bb.jpg"
+ },
+ {
+  "title": "ARD Radio Tatort",
+  "author": "ARD",
+  "category": "Radio drama",
+  "description": "The Tatort crime series for radio",
+  "url": "https://feeds.br.de/ard-radio-tatort/feed.xml",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts211/v4/ba/ef/38/baef3824-cdd5-67eb-d2fd-2b84716d9665/mza_4295102440664878592.jpeg/100x100bb.jpg"
+ },
+ {
+  "title": "ARD Hörspiel",
+  "author": "ARD",
+  "category": "Radio drama",
+  "description": "Radio plays from all ARD stations",
+  "url": "https://www1.wdr.de/mediathek/audio/hoerspiel-speicher/wdr_hoerspielspeicher150.podcast",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts211/v4/ef/1a/f6/ef1af629-1317-2779-c8a5-0ca37f5d91cd/mza_10960437342171903439.jpg/100x100bb.jpg"
+ },
+ {
+  "title": "Sherlock Holmes – Krimi-Hörspielreihe",
+  "author": "ARD",
+  "category": "Radio drama",
+  "description": "Sherlock Holmes radio plays",
+  "url": "https://feeds.br.de/sherlock-holmes-krimi-hoerspielklassiker-nach-sir-arthur-conan-doyle/feed.xml",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts211/v4/6d/78/23/6d78235f-c2ac-0007-72dd-b8132851230f/mza_6170744271732156111.jpeg/100x100bb.jpg"
+ },
+ {
+  "title": "Große Geschichten - ARD Literatur-Hörspiele",
+  "author": "ARD",
+  "category": "Radio drama",
+  "description": "Classic literature as radio plays",
+  "url": "https://feeds.br.de/hoerspiel-pool/feed.xml",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/14/4e/33/144e339d-6a3a-c981-298f-99b05a22d4c2/mza_7805078981761721571.jpeg/100x100bb.jpg"
+ },
+ {
+  "title": "Dickie Dick Dickens – Kriminal-Hörspiel-Serie",
+  "author": "Radio Bremen",
+  "category": "Radio drama",
+  "description": "Cult crime comedy series",
+  "url": "https://www.bremenzwei.de/feed/podcast/dickie-dick-dickens-106.xml",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts126/v4/03/69/b5/0369b5fb-75f1-e2e5-1ad8-60aa72e07d06/mza_5722495830693923906.jpg/100x100bb.jpg"
+ },
+ {
+  "title": "Kakadu – Der Kinderpodcast",
+  "author": "Deutschlandfunk Kultur",
+  "category": "Kids",
+  "description": "Knowledge for kids",
+  "url": "https://www.kakadu.de/kakadu-104.xml",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts211/v4/dc/a2/94/dca2948c-01ef-6f85-37a4-01797d2b5cdb/mza_2333181387655719874.jpg/100x100bb.jpg"
+ },
+ {
+  "title": "Die Maus zum Hören",
+  "author": "Westdeutscher Rundfunk",
+  "category": "Kids",
+  "description": "Die Sendung mit der Maus to listen to",
+  "url": "https://kinder.wdr.de/radio/diemaus/audio/diemaus-60/diemaus-60-106.podcast",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts116/v4/e5/f2/87/e5f28708-ea32-dc69-57b5-1e0436918887/mza_5346652934483340891.jpg/100x100bb.jpg"
+ },
+ {
+  "title": "Mikado - der Kinder-Podcast",
+  "author": "NDR Info",
+  "category": "Kids",
+  "description": "Radio for kids from NDR",
+  "url": "https://www.ndr.de/nachrichten/info/podcast4223.xml",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/05/d6/4e/05d64ec7-f229-7b36-7305-baa5d49039a8/mza_815549745388141177.jpg/100x100bb.jpg"
+ },
+ {
+  "title": "CheckPod - Der Podcast mit Checker Tobi",
+  "author": "Bayerischer Rundfunk",
+  "category": "Kids",
+  "description": "Checker Tobi explains the world",
+  "url": "https://feeds.br.de/checkpod-der-podcast-mit-checker-tobi/feed.xml",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts125/v4/8a/e6/2c/8ae62cb9-09b8-d96b-1fbc-0209f92216ff/mza_5325373565044573997.jpeg/100x100bb.jpg"
+ },
+ {
+  "title": "Figarinos Fahrradladen - Der MDR Tweens Hörspiel-Podcast für Kinder",
+  "author": "Mitteldeutscher Rundfunk",
+  "category": "Kids",
+  "description": "Radio plays for kids from MDR",
+  "url": "https://www.mdr.de/tweens/podcast/figarino/fahrradladen-mdr-100.xml",
+  "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/0b/15/b7/0b15b77b-c773-e754-e14e-313b37422147/mza_4438897306364778534.jpg/100x100bb.jpg"
+ }
+]
