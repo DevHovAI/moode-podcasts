@@ -9,6 +9,17 @@ def test_stations_from_cfg_radio(dirs):
     assert (wdr["url"], wdr["genre"], wdr["broadcaster"]) == ("http://r/wdr5", "News", "WDR")
 
 
+def test_home_page_only_web_links(dirs):
+    import sqlite3
+
+    with sqlite3.connect(dirs["db"]) as db:
+        sql = "UPDATE cfg_radio SET home_page = ? WHERE name = ?"
+        db.execute(sql, (" https://www1.wdr.de/radio/wdr5/ ", "WDR 5"))
+        db.execute(sql, ("javascript:alert(1)", "Radio FM4"))
+    pages = {s["name"]: s["home_page"] for s in radio.stations()}
+    assert pages == {"WDR 5": "https://www1.wdr.de/radio/wdr5/", "Radio FM4": ""}
+
+
 def test_no_database(tmp_path, monkeypatch):
     monkeypatch.setenv("MOODE_PODCASTS_DB", str(tmp_path / "missing.db"))
     assert radio.stations() == []
