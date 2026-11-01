@@ -219,3 +219,22 @@ def test_radio_update_api(server, monkeypatch):
     assert calls == [("http://r/wdr5", {"genre": "News"}, True)]
     status, _ = call(server, "POST", "/api/radio", json.dumps(body), page=False)
     assert status == 403 and len(calls) == 1
+
+
+def test_sleep_action_validates(server, monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        web.Handler.player,
+        "set_sleep",
+        lambda minutes=None, end=False: calls.append((minutes, end)),
+    )
+    for body, status in (
+        ({"action": "sleep", "minutes": 30}, 200),
+        ({"action": "sleep", "end": True}, 200),
+        ({"action": "sleep"}, 200),
+        ({"action": "sleep", "minutes": 0.1}, 400),
+        ({"action": "sleep", "minutes": 9999}, 400),
+    ):
+        got, raw = call(server, "POST", "/api/player", json.dumps(body))
+        assert got == status, (body, raw)
+    assert calls == [(30, False), (None, True), (None, False)]

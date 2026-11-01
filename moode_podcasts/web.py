@@ -431,6 +431,11 @@ class Handler(BaseHTTPRequestHandler):
             p.move(req["id"], int(req["offset"]))
         elif action == "volume":
             p.volume(int(req["value"]))
+        elif action == "sleep":
+            minutes = req.get("minutes")
+            if minutes is not None and not 1 <= int(minutes) <= 600:
+                raise ValueError("Sleep-Timer: 1 bis 600 Minuten")
+            p.set_sleep(int(minutes) if minutes else None, end=bool(req.get("end")))
         else:
             raise ValueError(f"unbekannte Aktion {action!r}")
 

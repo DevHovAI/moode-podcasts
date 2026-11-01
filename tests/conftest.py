@@ -177,6 +177,7 @@ class FakeMpd(socketserver.StreamRequestHandler):
                     f"elapsed: {st.get('elapsed', 0)}",
                     f"duration: {st.get('duration', 0)}",
                     "volume: 60",
+                    f"single: {st.get('single', '0')}",
                     *extra,
                 )
             elif cmd == "playlistinfo":
@@ -224,6 +225,9 @@ class FakeMpd(socketserver.StreamRequestHandler):
                 self.queue.insert(int(args[1]), song)
                 self.ok()
             elif cmd == "setvol":
+                self.ok()
+            elif cmd == "single":
+                st["single"] = args[0]
                 self.ok()
             elif cmd == "list":
                 self.ok(*self.list_tags(args))

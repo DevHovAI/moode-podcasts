@@ -39,6 +39,10 @@ requests, release notes — is English.
 - Resume: MPD answers "Not seekable" right after starting a stream, so
   `Player._seek_when_ready` retries. Far seeks are slow with moOde's `mad`
   decoder — never "fix" that by changing moOde's MPD config.
+- Sleep timer: minutes live in `Player.sleep_until` and are checked by the
+  monitor loop (pause, not stop); "end of episode" is MPD's own
+  `single oneshot`, so it is read back from MPD's status. Never touch a
+  `single 1` the user set in moOde.
 - Never store position 0 as progress (MPD reports 0 after stop).
 - `paths.py` reads the environment on every call so tests can redirect it.
 - Write requests need the `X-Moode-Podcasts: 1` header (cheap CSRF guard).
