@@ -66,10 +66,29 @@ export function section(title, body, moreHref = "", moreLabel = "Alle anzeigen")
 // Live-Zustand des Players (Server-Sent Events)
 export const live = {S: null, recvAt: 0, listeners: new Set()};
 export function onState(fn) { live.listeners.add(fn); }
+
+// Läuft die Wiedergabe über Bluetooth, zeigt die Seite diesen Zustand statt MPDs
+// (MPD steht dann; den echten Wert behält S.mpd).
+function applyBluetooth(S) {
+  const b = S.bluetooth;
+  if (!b || !b.active) return S;
+  S.mpd = {state: S.state, elapsed: S.elapsed, duration: S.duration};
+  S.state = b.status === "playing" ? "play" : b.status === "paused" ? "pause" : "stop";
+  S.elapsed = b.position || 0;
+  S.duration = b.duration || 0;
+  S.seeking = null;
+  S.error = "";
+  S.sleep = null;
+  S.queue = [];
+  S.current = {kind: "bluetooth", url: "bluetooth", title: b.title || "Bluetooth",
+               artist: b.artist || "", album: b.album || "", device: b.device || "", cover: b.cover || ""};
+  return S;
+}
+
 export function connect() {
   const es = new EventSource("/api/events");
   es.onmessage = ev => {
-    live.S = JSON.parse(ev.data);
+    live.S = applyBluetooth(JSON.parse(ev.data));
     live.recvAt = performance.now();
     live.listeners.forEach(fn => fn(live.S));
   };

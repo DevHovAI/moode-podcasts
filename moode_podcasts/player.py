@@ -11,8 +11,9 @@ import logging
 import queue
 import threading
 import time
+import urllib.parse
 
-from moode_podcasts import paths, radio
+from moode_podcasts import bluetooth, paths, radio
 from moode_podcasts.mpd import Mpd, MpdError, quote
 from moode_podcasts.store import Progress, Store
 
@@ -187,9 +188,34 @@ class Player:
             out["seeking"] = target[1]
         else:
             self.seek_target = None
+        out["bluetooth"] = self._bluetooth()
         pos = int(cur["Pos"]) if cur else -1
         out["queue"] = [self._queue_entry(s) for s in songs[pos + 1 :]]
         return out
+
+    def _bluetooth(self) -> dict:
+        """Bluetooth-Block: ``{"active": False}`` oder Titel, Gerät, Position samt Cover-Adresse."""
+        bt = bluetooth.state()
+        if bt["active"] and bt["artist"] and bt["title"]:
+            q = urllib.parse.urlencode({"artist": bt["artist"], "title": bt["title"]})
+            bt["cover"] = f"/api/bluetooth/cover?{q}"
+        return bt
+
+    def _bt_control(self, action: str) -> bool:
+        """Läuft Bluetooth, geht der Befehl ans Handy statt an MPD (True = erledigt)."""
+        if not bluetooth.active():
+            return False
+        bluetooth.control(action)
+        threading.Thread(target=self._publish_soon, daemon=True).start()
+        return True
+
+    def _publish_soon(self) -> None:
+        time.sleep(0.6)  # das Handy braucht einen Moment, bis BlueZ den neuen Status meldet
+        try:
+            with Mpd() as m:
+                self.hub.publish(self.snapshot(m))
+        except (OSError, MpdError) as exc:
+            log.debug("MPD: %s", exc)
 
     def _queue_entry(self, song: dict) -> dict:
         info = self.library.describe(song["file"])
@@ -335,11 +361,15 @@ class Player:
             self.seek(float(st.get("elapsed", 0)) + delta)
 
     def toggle(self) -> None:
+        if self._bt_control("toggle"):
+            return
         with Mpd() as m:
             state = _status(m).get("state")
             m.command("pause 1" if state == "play" else ("pause 0" if state == "pause" else "play"))
 
     def stop(self) -> None:
+        if self._bt_control("stop"):
+            return
         with Mpd() as m:
             m.command("stop")
 
@@ -355,6 +385,8 @@ class Player:
 
     def next(self) -> None:
         """Bei Folgen mit Kapiteln: nächstes Kapitel, sonst nächster Eintrag."""
+        if self._bt_control("next"):
+            return
         chapters, elapsed = self._chapters_now()
         i = current_chapter(chapters, elapsed)
         if chapters and i + 1 < len(chapters):
@@ -365,6 +397,8 @@ class Player:
 
     def previous(self) -> None:
         """Kapitelanfang, bzw. voriges Kapitel, wenn man gerade erst hineingesprungen ist."""
+        if self._bt_control("previous"):
+            return
         chapters, elapsed = self._chapters_now()
         i = current_chapter(chapters, elapsed)
         if chapters and i >= 0:
@@ -421,7 +455,9 @@ class Player:
         return True
 
     def _idle_time(self, snap: dict) -> float:
-        wait = 2 if snap.get("seeking") else 5 if snap["state"] == "play" else 30
+        # Bluetooth meldet sich nicht über MPD: öfter nachsehen, auch wenn MPD ruht
+        bt = snap.get("bluetooth", {}).get("active")
+        wait = 2 if snap.get("seeking") or bt else 5
         if self.sleep_until:
             wait = min(wait, max(0.2, self.sleep_until - time.time()))
         return wait

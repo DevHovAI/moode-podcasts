@@ -16,6 +16,11 @@ modified; station changes go through moOde's own interface.
 - **Player**: seek bar, ±30 s, chapter list (tap to jump), shownotes,
   next/previous jump between chapters, the queue ("Warteschlange"), a sleep
   timer (minutes or end of episode) that runs on the device
+- **Bluetooth**: while a phone plays through moOde's Bluetooth renderer, the
+  player shows that instead of MPD: a "Bluetooth · phone" badge, title,
+  artist, album, cover (looked up by artist and title, since phones rarely
+  send one), progress, and play/pause/next/previous, which go to the phone.
+  MPD-only controls (queue, chapters, ±30 s, sleep timer) are hidden
 - **Saved for later** ("Vorgemerkt"): a starred list of episodes, tracks and
   albums kept on the device; finished episodes drop out by themselves
 - **Resume**: remembers where you stopped in every episode, shows progress and
@@ -73,6 +78,7 @@ To remove it again: `sudo sh deploy/uninstall.sh`.
 | saved for later | `/var/lib/moode-podcasts/marked.json` |
 | theme and home screen (all devices) | `/var/lib/moode-podcasts/settings.json` |
 | resized cover images | `/var/lib/moode-podcasts/img/` |
+| Bluetooth cover look-ups (hits and misses) | `/var/lib/moode-podcasts/btcover/` |
 | services | `moode-podcasts-web.service`, `moode-podcasts-sync.timer` |
 
 - **Playback** uses MPD's queue. Playing an episode inserts it right after the
