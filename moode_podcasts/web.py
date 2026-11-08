@@ -15,6 +15,7 @@ from pathlib import Path
 
 from moode_podcasts import (
     backup,
+    btcover,
     directory,
     images,
     library,
@@ -252,6 +253,8 @@ class Handler(BaseHTTPRequestHandler):
             self._json(find_all(self.store, q.get("q", "")))
         elif route == "/api/events":
             self._events()
+        elif route == "/api/bluetooth/cover":
+            self._bt_cover(q)
         elif route == "/api/state":
             self._json(self.player.state())
         elif route == "/api/subscriptions":
@@ -358,6 +361,15 @@ class Handler(BaseHTTPRequestHandler):
             self._error("kein Bild", HTTPStatus.NOT_FOUND)
             return
         self._send(HTTPStatus.OK, data, "image/jpeg", {"Cache-Control": "max-age=604800"})
+
+    def _bt_cover(self, q: dict) -> None:
+        size = 600 if q.get("s") == "600" else 160
+        data = btcover.cover(q.get("artist", ""), q.get("title", ""), size)
+        if data is None:
+            self._error("kein Cover", HTTPStatus.NOT_FOUND)
+            return
+        # kurz zwischenspeichern: derselbe Titel liefert immer dasselbe Bild
+        self._send(HTTPStatus.OK, data, "image/jpeg", {"Cache-Control": "max-age=86400"})
 
     def _events(self) -> None:
         """Server-Sent Events: Zustand des Players, sobald er sich ändert."""

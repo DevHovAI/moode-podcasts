@@ -12,6 +12,14 @@ that you could not do before. They are not a copy of the commit subjects.
 
 ### Added
 
+- Bluetooth playback: when a phone plays through moOde's Bluetooth renderer,
+  the player shows the phone's track (title, artist, album, progress) with a
+  "Bluetooth · phone" badge and controls it: play/pause, next and previous go
+  to the phone. The cover is looked up by artist and title (iTunes, then
+  MusicBrainz and the Cover Art Archive) and remembered on the device.
+  Queue, chapters, ±30 s and the sleep timer are hidden meanwhile. The player
+  state and `/api/state` gain a `bluetooth` block; existing fields are
+  unchanged.
 - Radio stations show a link to their website under "Shownotes" in the
   player. The link comes from the website field of moOde's station list.
 - Mark radio stations as favourites and edit their stream address, website,

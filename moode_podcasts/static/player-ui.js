@@ -26,6 +26,11 @@ function nowInfo() {
     return {title: c.icy_title || c.name, sub: c.icy_title ? c.name : (c.genre || "Radio"),
             cover: logo(c.name), thumb: logo(c.name), chapter: "", radio: true};
   }
+  if (c.kind === "bluetooth") {
+    const cover = size => c.cover ? `${c.cover}&s=${size}` : "";
+    return {title: c.title, sub: [c.artist, c.album].filter(Boolean).join(" · "),
+            cover: cover(600), thumb: cover(160), chapter: "", radio: false, bt: c.device || "Handy"};
+  }
   if (c.kind === "song") {
     const cover = fileCover(c.url);
     return {title: c.title, sub: [c.artist, c.album].filter(Boolean).join(" · "),
@@ -43,6 +48,13 @@ function render(S) {
   $("#mini").classList.toggle("hidden", !info);
   document.body.classList.toggle("has-mini", !!info);
   if (!info) { closePlayer(); return; }
+  // Bluetooth: nur Titel, Cover, Fortschritt und Tasten – Warteschlange, Kapitel, ±30 s,
+  // Lautstärke und Sleep-Timer gehören zu MPD
+  $("#sheet").classList.toggle("bt", !!info.bt);
+  $("#np-bt").classList.toggle("hidden", !info.bt);
+  $("#np-bt").textContent = info.bt ? `Bluetooth · ${info.bt}` : "";
+  $("#sheet-label").textContent = info.bt ? "Bluetooth" : "Jetzt läuft";
+  $("#np-seek").disabled = !!info.bt;
   const playing = S.state === "play";
   for (const b of [$("#mini-toggle"), $("#np-toggle")]) b.textContent = playing ? "⏸" : "▶";
   $("#mini-title").textContent = info.title;
@@ -57,11 +69,12 @@ function render(S) {
   const more = $("#sheet-more");
   more.style.visibility = info.radio ? "visible" : "hidden";
   if (info.radio) more.dataset.stationMenu = S.current.url; else delete more.dataset.stationMenu;
-  $("#np-seek-wrap").classList.toggle("hidden", info.radio || !S.duration);
+  // Bluetooth: Fortschritt nur, wenn das Handy eine Position meldet (sonst steht er auf 0)
+  const btPos = !info.bt || S.bluetooth.position > 0 || playing;
+  $("#np-seek-wrap").classList.toggle("hidden", info.radio || !S.duration || !btPos);
   if (S.volume >= 0 && document.activeElement !== $("#np-volume")) $("#np-volume").value = S.volume;
   $("#np-status").textContent = S.seeking != null ? "Springe …" : (S.error ? "⚠ " + S.error : "");
-  renderChapters(S);
-  renderQueue(S);
+  if (!info.bt) { renderChapters(S); renderQueue(S); }
   tick();
 }
 
@@ -107,7 +120,7 @@ function openSleep() {
 function tick() {
   const S = live.S;
   if (!S || !S.current) return;
-  renderSleep(S);
+  if (S.current.kind !== "bluetooth") renderSleep(S);
   const pos = elapsedNow(), dur = S.duration || 0;
   $("#mini-bar").style.width = dur ? `${Math.min(100, pos / dur * 100)}%` : "0";
   if (!dragging) {
