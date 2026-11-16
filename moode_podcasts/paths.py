@@ -41,3 +41,8 @@ def moode_www() -> Path:
 def bluetooth_cache() -> Path:
     """Gemerkte Cover-Treffer (und Fehlschläge) der Bluetooth-Wiedergabe – winzige JSON-Dateien."""
     return data_dir() / "btcover"
+
+
+def moode_local() -> Path:
+    """moOdes Arbeitsordner – nur gelesen (Titeldaten der Renderer, spotmeta.json usw.)."""
+    return Path(os.environ.get("MOODE_PODCASTS_LOCAL", "/var/local/www"))
