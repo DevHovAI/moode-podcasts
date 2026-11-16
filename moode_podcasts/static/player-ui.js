@@ -29,7 +29,16 @@ function nowInfo() {
   if (c.kind === "bluetooth") {
     const cover = size => c.cover ? `${c.cover}&s=${size}` : "";
     return {title: c.title, sub: [c.artist, c.album].filter(Boolean).join(" · "),
-            cover: cover(600), thumb: cover(160), chapter: "", radio: false, bt: c.device || "Handy"};
+            cover: cover(600), thumb: cover(160), chapter: "", radio: false,
+            badge: `Bluetooth · ${c.device || "Handy"}`, label: "Bluetooth", control: true};
+  }
+  if (c.kind === "renderer") {
+    // Squeezelite, Roon & Co. melden keine Titel – dann steht nur der Name da
+    const sub = [c.artist, c.album].filter(Boolean).join(" · ");
+    return {title: c.title || `${c.name} aktiv`, sub: c.title ? sub : "Wiedergabe über moOde",
+            cover: c.cover, thumb: c.cover, chapter: "", radio: false,
+            badge: c.format ? `${c.name} · ${c.format}` : c.name, label: c.name, control: false,
+            disconnect: c.can_disconnect ? c.source : ""};
   }
   if (c.kind === "song") {
     const cover = fileCover(c.url);
@@ -48,13 +57,18 @@ function render(S) {
   $("#mini").classList.toggle("hidden", !info);
   document.body.classList.toggle("has-mini", !!info);
   if (!info) { closePlayer(); return; }
-  // Bluetooth: nur Titel, Cover, Fortschritt und Tasten – Warteschlange, Kapitel, ±30 s,
-  // Lautstärke und Sleep-Timer gehören zu MPD
-  $("#sheet").classList.toggle("bt", !!info.bt);
-  $("#np-bt").classList.toggle("hidden", !info.bt);
-  $("#np-bt").textContent = info.bt ? `Bluetooth · ${info.bt}` : "";
-  $("#sheet-label").textContent = info.bt ? "Bluetooth" : "Jetzt läuft";
-  $("#np-seek").disabled = !!info.bt;
+  // Bluetooth, Spotify & Co.: nur Titel, Cover, Fortschritt (und Tasten, wo wir steuern
+  // können) – Warteschlange, Kapitel, ±30 s, Lautstärke und Sleep-Timer gehören zu MPD
+  const ext = !!info.badge;
+  $("#sheet").classList.toggle("ext", ext);
+  $("#sheet").classList.toggle("nocontrol", ext && !info.control);
+  $("#mini-toggle").classList.toggle("hidden", ext && !info.control);
+  $("#np-bt").classList.toggle("hidden", !ext);
+  $("#np-bt").textContent = info.badge || "";
+  $("#sheet-label").textContent = info.label || "Jetzt läuft";
+  $("#np-seek").disabled = ext;
+  $("#np-disconnect").classList.toggle("hidden", !info.disconnect);
+  $("#np-disconnect").dataset.kind = info.disconnect || "";
   const playing = S.state === "play";
   for (const b of [$("#mini-toggle"), $("#np-toggle")]) b.textContent = playing ? "⏸" : "▶";
   $("#mini-title").textContent = info.title;
@@ -70,11 +84,11 @@ function render(S) {
   more.style.visibility = info.radio ? "visible" : "hidden";
   if (info.radio) more.dataset.stationMenu = S.current.url; else delete more.dataset.stationMenu;
   // Bluetooth: Fortschritt nur, wenn das Handy eine Position meldet (sonst steht er auf 0)
-  const btPos = !info.bt || S.bluetooth.position > 0 || playing;
+  const btPos = S.current.kind !== "bluetooth" || S.bluetooth.position > 0 || playing;
   $("#np-seek-wrap").classList.toggle("hidden", info.radio || !S.duration || !btPos);
   if (S.volume >= 0 && document.activeElement !== $("#np-volume")) $("#np-volume").value = S.volume;
   $("#np-status").textContent = S.seeking != null ? "Springe …" : (S.error ? "⚠ " + S.error : "");
-  if (!info.bt) { renderChapters(S); renderQueue(S); }
+  if (!ext) { renderChapters(S); renderQueue(S); }
   tick();
 }
 
@@ -120,7 +134,7 @@ function openSleep() {
 function tick() {
   const S = live.S;
   if (!S || !S.current) return;
-  if (S.current.kind !== "bluetooth") renderSleep(S);
+  if (!["bluetooth", "renderer"].includes(S.current.kind)) renderSleep(S);
   const pos = elapsedNow(), dur = S.duration || 0;
   $("#mini-bar").style.width = dur ? `${Math.min(100, pos / dur * 100)}%` : "0";
   if (!dragging) {
@@ -189,6 +203,10 @@ export function initPlayer() {
   $("#mini-toggle").onclick = e => { e.stopPropagation(); player("toggle"); };
   $("#np-toggle").onclick = () => player("toggle");
   $("#np-sleep").onclick = openSleep;
+  $("#np-disconnect").onclick = e => {
+    const kind = e.currentTarget.dataset.kind;
+    if (kind && confirm("Verbindung trennen? Die App verliert dann die Wiedergabe.")) player("disconnect", {kind});
+  };
   $("#mini-open").onclick = $("#mini-cover").onclick = openPlayer;
   $("#sheet-close").onclick = closePlayer;
   $$("[data-skip]").forEach(b => b.onclick = () => player("skip", {delta: +b.dataset.skip}));

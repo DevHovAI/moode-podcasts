@@ -514,6 +514,8 @@ class Handler(BaseHTTPRequestHandler):
             p.move(req["id"], int(req["offset"]))
         elif action == "volume":
             p.volume(int(req["value"]))
+        elif action == "disconnect":
+            p.disconnect_renderer(str(req.get("kind", "")))
         elif action == "sleep":
             minutes = req.get("minutes")
             if minutes is not None and not 1 <= int(minutes) <= 600:

@@ -67,11 +67,33 @@ export function section(title, body, moreHref = "", moreLabel = "Alle anzeigen")
 export const live = {S: null, recvAt: 0, listeners: new Set()};
 export function onState(fn) { live.listeners.add(fn); }
 
-// Läuft die Wiedergabe über Bluetooth, zeigt die Seite diesen Zustand statt MPDs
-// (MPD steht dann; den echten Wert behält S.mpd).
-function applyBluetooth(S) {
-  const b = S.bluetooth;
-  if (!b || !b.active) return S;
+// Läuft die Wiedergabe über Bluetooth, Spotify, Qobuz, AirPlay & Co., zeigt die Seite
+// diesen Zustand statt MPDs (MPD steht dann; den echten Wert behält S.mpd).
+function applySource(S) {
+  const b = S.bluetooth, r = S.renderer;
+  if (b && b.active) return applyBluetooth(S, b);
+  if (r && r.active) return applyRenderer(S, r);
+  return S;
+}
+
+function applyRenderer(S, r) {
+  S.mpd = {state: S.state, elapsed: S.elapsed, duration: S.duration};
+  S.state = r.status === "playing" ? "play" : r.status === "paused" ? "pause" : "stop";
+  // ohne bekannte Position keinen Fortschritt vortäuschen
+  S.elapsed = r.position ?? 0;
+  S.duration = r.position == null ? 0 : (r.duration || 0);
+  S.seeking = null;
+  S.error = "";
+  S.sleep = null;
+  S.queue = [];
+  const cover = r.cover && r.cover.startsWith("/") ? MOODE + r.cover : (r.cover || "");
+  S.current = {kind: "renderer", url: "renderer:" + r.kind, source: r.kind, name: r.name,
+               title: r.title, artist: r.artist, album: r.album, cover, format: r.format || "",
+               can_disconnect: !!r.can_disconnect};
+  return S;
+}
+
+function applyBluetooth(S, b) {
   S.mpd = {state: S.state, elapsed: S.elapsed, duration: S.duration};
   S.state = b.status === "playing" ? "play" : b.status === "paused" ? "pause" : "stop";
   S.elapsed = b.position || 0;
@@ -88,7 +110,7 @@ function applyBluetooth(S) {
 export function connect() {
   const es = new EventSource("/api/events");
   es.onmessage = ev => {
-    live.S = applyBluetooth(JSON.parse(ev.data));
+    live.S = applySource(JSON.parse(ev.data));
     live.recvAt = performance.now();
     live.listeners.forEach(fn => fn(live.S));
   };

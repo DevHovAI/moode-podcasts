@@ -66,3 +66,12 @@ requests, release notes — is English.
 - To look at the UI, drive headless Firefox over Marionette and wait a few
   seconds before the screenshot; a plain `firefox --screenshot` fires before
   the page has fetched its data.
+- Renderers (`renderers.py`): which one plays comes from moOde's flags in
+  `cfg_system` (`spotactive`, `qbzactive`, `aplactive` …); title and cover
+  from the files moOde writes for its own UI (`/var/local/www/spotmeta.json`,
+  `qbzmeta.json`, `aplmeta.json`). Duration is ms except Qobuz (seconds).
+  No renderer reports a position, so `renderers.Clock` counts from a track
+  change it saw. "Disconnect" goes through moOde's
+  `command/renderer.php?cmd=disconnect_renderer` (restarts that service);
+  never offer it for Squeezelite/Plexamp/multiroom, there it switches the
+  service off. Bluetooth stays in `bluetooth.py` (BlueZ, with control).

@@ -53,7 +53,7 @@
       <input type="range" id="np-seek" min="0" max="1000" value="0" step="1" aria-label="Position">
       <div class="np-times"><span id="np-elapsed">0:00</span><span id="np-status"></span><span id="np-remaining">0:00</span></div>
     </div>
-    <div class="np-controls">
+    <div class="np-controls" id="np-controls">
       <button class="icon big" data-act="previous" aria-label="Zurück">⏮</button>
       <button class="icon big skip mpd-only" data-skip="-30" aria-label="30 Sekunden zurück">−30</button>
       <button class="icon huge" id="np-toggle" aria-label="Wiedergabe/Pause"></button>
@@ -62,6 +62,7 @@
     </div>
     <div class="np-volume mpd-only"><span>🔈</span><input type="range" id="np-volume" min="0" max="100" aria-label="Lautstärke"><span>🔊</span></div>
     <div class="np-extra mpd-only"><button class="btn" id="np-sleep">☾ Sleep-Timer</button></div>
+    <div class="np-extra"><button class="btn hidden" id="np-disconnect">Verbindung trennen</button></div>
 
     <div class="np-tabs mpd-only">
       <button data-np="chapters" id="np-tab-chapters" class="on">Kapitel</button>

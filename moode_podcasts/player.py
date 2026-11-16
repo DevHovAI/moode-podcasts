@@ -13,7 +13,7 @@ import threading
 import time
 import urllib.parse
 
-from moode_podcasts import bluetooth, paths, radio
+from moode_podcasts import bluetooth, paths, radio, renderers
 from moode_podcasts.mpd import Mpd, MpdError, quote
 from moode_podcasts.store import Progress, Store
 
@@ -189,6 +189,7 @@ class Player:
         else:
             self.seek_target = None
         out["bluetooth"] = self._bluetooth()
+        out["renderer"] = renderers.state()
         pos = int(cur["Pos"]) if cur else -1
         out["queue"] = [self._queue_entry(s) for s in songs[pos + 1 :]]
         return out
@@ -204,10 +205,24 @@ class Player:
     def _bt_control(self, action: str) -> bool:
         """Läuft Bluetooth, geht der Befehl ans Handy statt an MPD (True = erledigt)."""
         if not bluetooth.active():
+            if action != "stop":
+                self._refuse_while_renderer()
             return False
         bluetooth.control(action)
         threading.Thread(target=self._publish_soon, daemon=True).start()
         return True
+
+    @staticmethod
+    def _refuse_while_renderer() -> None:
+        """Spotify & Co. belegen den Ausgang: MPD jetzt zu starten, scheitert nur."""
+        r = renderers.active()
+        if r is not None:
+            raise ValueError(f"{r.name} spielt gerade – bitte in der App steuern oder trennen")
+
+    def disconnect_renderer(self, kind: str) -> None:
+        """moOdes „Trennen“ für Spotify, Qobuz, AirPlay oder Roon."""
+        renderers.disconnect(kind)
+        threading.Thread(target=self._publish_soon, daemon=True).start()
 
     def _publish_soon(self) -> None:
         time.sleep(0.6)  # das Handy braucht einen Moment, bis BlueZ den neuen Status meldet
@@ -455,8 +470,8 @@ class Player:
         return True
 
     def _idle_time(self, snap: dict) -> float:
-        # Bluetooth meldet sich nicht über MPD: öfter nachsehen, auch wenn MPD ruht
-        bt = snap.get("bluetooth", {}).get("active")
+        # Bluetooth, Spotify & Co. melden sich nicht über MPD: öfter nachsehen, auch wenn MPD ruht
+        bt = snap.get("bluetooth", {}).get("active") or snap.get("renderer", {}).get("active")
         wait = 2 if snap.get("seeking") or bt else 5
         if self.sleep_until:
             wait = min(wait, max(0.2, self.sleep_until - time.time()))
