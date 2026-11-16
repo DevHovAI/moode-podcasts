@@ -36,3 +36,8 @@ def moode_url() -> str:
 def moode_www() -> Path:
     """moOdes Webverzeichnis – nur gelesen (Farbzuordnung der Akzentfarben)."""
     return Path(os.environ.get("MOODE_PODCASTS_WWW", "/var/www"))
+
+
+def bluetooth_cache() -> Path:
+    """Gemerkte Cover-Treffer (und Fehlschläge) der Bluetooth-Wiedergabe – winzige JSON-Dateien."""
+    return data_dir() / "btcover"

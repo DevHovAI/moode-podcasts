@@ -198,3 +198,7 @@ input[type=color] { width: 44px; height: 36px; border: 0; background: none; padd
 /* Sleep-Timer im Player */
 .np-extra { display: flex; justify-content: center; margin-top: 10px; }
 #np-sleep.on { box-shadow: inset 0 0 0 2px var(--acc); }
+
+.np-badge { display: inline-block; margin-top: 14px; padding: 3px 12px; border-radius: 14px;
+  background: var(--acc); color: var(--on-acc); font-size: 13px; font-weight: 600; }
+#sheet.bt .mpd-only { display: none !important; }

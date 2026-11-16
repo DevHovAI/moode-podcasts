@@ -256,3 +256,33 @@ def test_backup_api_round_trip(server):
     assert status == 400  # Upload ist verbraucht
     status, _ = call(server, "POST", "/api/backup", json.dumps({"parts": ["page"]}), page=False)
     assert status == 403
+
+
+def test_state_api_has_bluetooth_block(server, mpd):
+    state = get_json(server, "/api/state")
+    assert state["bluetooth"] == {"active": False}
+    assert state["state"] == "play"  # bestehende Felder unverändert
+
+
+def test_bluetooth_cover_route(server, monkeypatch):
+    from moode_podcasts import btcover
+
+    seen = []
+    monkeypatch.setattr(btcover, "cover", lambda a, t, s: seen.append((a, t, s)) or b"\xff\xd8jpg")
+    status, body = call(server, "GET", "/api/bluetooth/cover?artist=Adele&title=Hello&s=600")
+    assert (status, body) == (200, b"\xff\xd8jpg") and seen == [("Adele", "Hello", 600)]
+    monkeypatch.setattr(btcover, "cover", lambda a, t, s: None)
+    assert call(server, "GET", "/api/bluetooth/cover?artist=x&title=y")[0] == 404
+
+
+def test_player_api_actions_reach_bluetooth(server, mpd, monkeypatch):
+    from moode_podcasts import bluetooth
+
+    sent = []
+    monkeypatch.setattr(bluetooth, "active", lambda: True)
+    monkeypatch.setattr(bluetooth, "control", sent.append)
+    for action in ("toggle", "next", "previous", "stop"):
+        body = json.dumps({"action": action}).encode()
+        assert call(server, "POST", "/api/player", body=body)[0] == 200
+    assert sent == ["toggle", "next", "previous", "stop"]
+    assert mpd.log == []

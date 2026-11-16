@@ -44,7 +44,8 @@
     <button class="icon" id="sheet-more" aria-label="Sender-Menü">⋯</button>
   </div>
   <div class="sheet-body">
-    <img id="np-cover" alt="">
+    <img id="np-cover" alt="" onerror="this.style.visibility='hidden'">
+    <div class="np-badge hidden" id="np-bt"></div>
     <div class="np-title" id="np-title"></div>
     <div class="np-sub" id="np-sub"></div>
     <div class="np-chapter" id="np-chapter"></div>
@@ -54,22 +55,22 @@
     </div>
     <div class="np-controls">
       <button class="icon big" data-act="previous" aria-label="Zurück">⏮</button>
-      <button class="icon big skip" data-skip="-30" aria-label="30 Sekunden zurück">−30</button>
+      <button class="icon big skip mpd-only" data-skip="-30" aria-label="30 Sekunden zurück">−30</button>
       <button class="icon huge" id="np-toggle" aria-label="Wiedergabe/Pause"></button>
-      <button class="icon big skip" data-skip="30" aria-label="30 Sekunden vor">+30</button>
+      <button class="icon big skip mpd-only" data-skip="30" aria-label="30 Sekunden vor">+30</button>
       <button class="icon big" data-act="next" aria-label="Weiter">⏭</button>
     </div>
-    <div class="np-volume"><span>🔈</span><input type="range" id="np-volume" min="0" max="100" aria-label="Lautstärke"><span>🔊</span></div>
-    <div class="np-extra"><button class="btn" id="np-sleep">☾ Sleep-Timer</button></div>
+    <div class="np-volume mpd-only"><span>🔈</span><input type="range" id="np-volume" min="0" max="100" aria-label="Lautstärke"><span>🔊</span></div>
+    <div class="np-extra mpd-only"><button class="btn" id="np-sleep">☾ Sleep-Timer</button></div>
 
-    <div class="np-tabs">
+    <div class="np-tabs mpd-only">
       <button data-np="chapters" id="np-tab-chapters" class="on">Kapitel</button>
       <button data-np="queue">Warteschlange</button>
       <button data-np="notes">Shownotes</button>
     </div>
-    <div id="np-chapters" class="np-pane"></div>
-    <div id="np-queue" class="np-pane hidden"></div>
-    <div id="np-notes" class="np-pane hidden notes"></div>
+    <div id="np-chapters" class="mpd-only np-pane"></div>
+    <div id="np-queue" class="mpd-only np-pane hidden"></div>
+    <div id="np-notes" class="mpd-only np-pane hidden notes"></div>
   </div>
 </section>
 
