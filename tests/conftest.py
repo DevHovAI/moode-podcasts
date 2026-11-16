@@ -23,6 +23,15 @@ def no_network(monkeypatch):
     monkeypatch.setattr(urllib.request, "urlopen", forbidden)
 
 
+@pytest.fixture(autouse=True)
+def no_delayed_publish(monkeypatch):
+    """Der verzögerte Neuversand nach Bluetooth-/Trennen-Befehlen läuft sonst in einem
+    Faden weiter und landet im MPD-Protokoll des nächsten Tests."""
+    from moode_podcasts.player import Player
+
+    monkeypatch.setattr(Player, "_publish_soon", lambda self: None)
+
+
 # Schema wie in moOdes moode-sqlite3.db
 CFG_RADIO = """CREATE TABLE cfg_radio (id INTEGER PRIMARY KEY, station CHAR (128), name CHAR (128),
     type CHAR (1), logo CHAR (128), genre CHAR (32), broadcaster CHAR (32), language CHAR (32),
