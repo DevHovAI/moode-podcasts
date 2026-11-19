@@ -86,6 +86,12 @@ def read_meta(r: Renderer) -> dict:
     return data if isinstance(data, dict) else {}
 
 
+def playing(r: Renderer) -> bool:
+    """Läuft gerade ein Titel? Ohne Titeldaten (Spotify verbunden, aber still): nein."""
+    meta = read_meta(r)
+    return bool(meta.get("title")) and str(meta.get("playstate") or "") != "Pause"
+
+
 def _seconds(value, ms: bool) -> float:
     try:
         n = float(value)

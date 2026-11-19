@@ -23,8 +23,9 @@ modified; station changes go through moOde's own interface.
   MPD-only controls (queue, chapters, ±30 s, sleep timer) are hidden
 - **Spotify Connect, Qobuz Connect, AirPlay**: the track moOde's renderer
   plays, with cover, format and an estimated progress bar, plus moOde's
-  "Disconnect". The app stays in control of playback. Squeezelite, Plexamp,
-  Roon, audio input and multiroom receiver are shown by name
+  "Disconnect". The page stays usable: whatever you start here takes over and
+  ends the session. Squeezelite, Plexamp, Roon, audio input and multiroom
+  receiver are shown by name
 - **Saved for later** ("Vorgemerkt"): a starred list of episodes, tracks and
   albums kept on the device; finished episodes drop out by themselves
 - **Resume**: remembers where you stopped in every episode, shows progress and

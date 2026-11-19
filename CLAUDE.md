@@ -74,4 +74,6 @@ requests, release notes — is English.
   change it saw. "Disconnect" goes through moOde's
   `command/renderer.php?cmd=disconnect_renderer` (restarts that service);
   never offer it for Squeezelite/Plexamp/multiroom, there it switches the
-  service off. Bluetooth stays in `bluetooth.py` (BlueZ, with control).
+  service off. The page never locks like moOde's overlay: anything that
+  starts MPD calls `Player._take_over` (disconnect, then wait for the flag
+  to clear); toggle while a renderer plays only ends that session. Bluetooth stays in `bluetooth.py` (BlueZ, with control).

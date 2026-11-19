@@ -25,9 +25,11 @@ that you could not do before. They are not a copy of the commit subjects.
   badge such as "Spotify Connect · Vorbis 320 kbps", and a progress bar
   counted from the track change. "Disconnect" ends the session the way
   moOde's own button does. Squeezelite, Plexamp, Roon, the audio input and
-  the multiroom receiver show up by name. MPD's play/pause/next are refused
-  meanwhile, because the renderer holds the audio output. The player state
-  gains a `renderer` block.
+  the multiroom receiver show up by name. Unlike moOde's own overlay, the
+  page stays usable: starting an episode, station or album (or pressing
+  play) ends the Spotify, Qobuz, AirPlay or Roon session first and takes
+  over the output; ⏹ ends a session that is playing. The player state gains
+  a `renderer` block.
 - Radio stations show a link to their website under "Shownotes" in the
   player. The link comes from the website field of moOde's station list.
 - Mark radio stations as favourites and edit their stream address, website,
