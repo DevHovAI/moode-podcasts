@@ -19,6 +19,7 @@ from moode_podcasts.store import Progress, Store
 
 log = logging.getLogger(__name__)
 
+TAKEOVER_WAIT = 12  # Sekunden; moOde startet den Dienst neu (Spotify ~2–4 s)
 RESUME_MIN = 15  # kürzer gehört: von vorn
 PLAYED_REST = 30  # so wenig übrig: gilt als gehört
 SAVE_EVERY = 10
@@ -205,19 +206,26 @@ class Player:
     def _bt_control(self, action: str) -> bool:
         """Läuft Bluetooth, geht der Befehl ans Handy statt an MPD (True = erledigt)."""
         if not bluetooth.active():
-            if action != "stop":
-                self._refuse_while_renderer()
             return False
         bluetooth.control(action)
         threading.Thread(target=self._publish_soon, daemon=True).start()
         return True
 
-    @staticmethod
-    def _refuse_while_renderer() -> None:
-        """Spotify & Co. belegen den Ausgang: MPD jetzt zu starten, scheitert nur."""
+    def _take_over(self) -> None:
+        """Spotify & Co. belegen den Ausgang: bevor MPD spielt, die Verbindung trennen.
+
+        So bleibt die Seite benutzbar statt gesperrt – wer hier etwas startet, will es hören.
+        Squeezelite & Co. lassen sich nur abschalten, nicht trennen; dort versucht es MPD so.
+        """
         r = renderers.active()
-        if r is not None:
-            raise ValueError(f"{r.name} spielt gerade – bitte in der App steuern oder trennen")
+        if r is None or not r.job:
+            return
+        renderers.disconnect(r.kind)
+        deadline = time.monotonic() + TAKEOVER_WAIT
+        while renderers.active() is not None:
+            if time.monotonic() > deadline:
+                raise ValueError(f"{r.name} ließ sich nicht trennen")
+            time.sleep(0.3)
 
     def disconnect_renderer(self, kind: str) -> None:
         """moOdes „Trennen“ für Spotify, Qobuz, AirPlay oder Roon."""
@@ -304,6 +312,7 @@ class Player:
         return sid
 
     def play(self, url: str) -> None:
+        self._take_over()
         with self.lock, Mpd() as m:
             st = _status(m)
             pos = int(st["song"]) + 1 if "song" in st else None
@@ -329,6 +338,8 @@ class Player:
         """Mehrere Einträge (Album, Vorgemerkt) nach dem laufenden einfügen bzw. hinten anhängen."""
         if not files:
             return
+        if now:
+            self._take_over()
         with self.lock, Mpd() as m:
             st = _status(m)
             pos = int(st["song"]) + 1 if now and "song" in st else None
@@ -378,6 +389,12 @@ class Player:
     def toggle(self) -> None:
         if self._bt_control("toggle"):
             return
+        r = renderers.active()
+        if r is not None and r.job and renderers.playing(r):
+            # Spotify & Co. lassen sich von hier nicht pausieren – nur beenden
+            self.disconnect_renderer(r.kind)
+            return
+        self._take_over()
         with Mpd() as m:
             state = _status(m).get("state")
             m.command("pause 1" if state == "play" else ("pause 0" if state == "pause" else "play"))
@@ -385,6 +402,9 @@ class Player:
     def stop(self) -> None:
         if self._bt_control("stop"):
             return
+        r = renderers.active()
+        if r is not None and r.job:
+            self.disconnect_renderer(r.kind)
         with Mpd() as m:
             m.command("stop")
 
@@ -402,6 +422,7 @@ class Player:
         """Bei Folgen mit Kapiteln: nächstes Kapitel, sonst nächster Eintrag."""
         if self._bt_control("next"):
             return
+        self._take_over()
         chapters, elapsed = self._chapters_now()
         i = current_chapter(chapters, elapsed)
         if chapters and i + 1 < len(chapters):
@@ -414,6 +435,7 @@ class Player:
         """Kapitelanfang, bzw. voriges Kapitel, wenn man gerade erst hineingesprungen ist."""
         if self._bt_control("previous"):
             return
+        self._take_over()
         chapters, elapsed = self._chapters_now()
         i = current_chapter(chapters, elapsed)
         if chapters and i >= 0:

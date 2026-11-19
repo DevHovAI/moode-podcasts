@@ -201,4 +201,4 @@ input[type=color] { width: 44px; height: 36px; border: 0; background: none; padd
 
 .np-badge { display: inline-block; margin-top: 14px; padding: 3px 12px; border-radius: 14px;
   background: var(--acc); color: var(--on-acc); font-size: 13px; font-weight: 600; }
-#sheet.ext .mpd-only, #sheet.nocontrol .np-controls { display: none !important; }
+#sheet.ext .mpd-only, #sheet.noskip [data-act] { display: none !important; }

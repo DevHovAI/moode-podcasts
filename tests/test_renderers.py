@@ -171,15 +171,63 @@ def test_snapshot_has_renderer_block(dirs, mpd, player):
     assert player._idle_time(snap) == 2
 
 
-@pytest.mark.parametrize("method", ["toggle", "next", "previous"])
-def test_mpd_controls_refused_while_renderer_plays(dirs, mpd, player, method):
+@pytest.fixture
+def disconnects(dirs, monkeypatch):
+    """moOdes Trennen im Kleinen: merkt sich die Art und setzt das Flag zurück wie moOde."""
+    seen = []
+
+    def fake(kind):
+        seen.append(kind)
+        r = renderers.BY_KIND[kind]
+        set_flags(dirs, **{r.flag: "0"})
+
+    monkeypatch.setattr(renderers, "disconnect", fake)
+    return seen
+
+
+def test_playing_something_takes_over_from_spotify(dirs, mpd, player, disconnects):
     set_flags(dirs, spotactive="1")
-    with pytest.raises(ValueError, match="Spotify Connect"):
-        getattr(player, method)()
-    assert mpd.log == []
+    write_meta(dirs, "spotmeta.json", None)  # verbunden, aber still (oder kaputt)
+    player.play("http://r/wdr5")
+    assert disconnects == ["spotify"]
+    assert any(line.startswith("playid") for line in mpd.log)
 
 
-def test_stop_still_reaches_mpd(dirs, mpd, player):
+def test_toggle_while_idle_spotify_starts_mpd(dirs, mpd, player, disconnects):
+    set_flags(dirs, spotactive="1")
+    player.toggle()
+    assert disconnects == ["spotify"]
+    assert any(line.startswith(("play", "pause")) for line in mpd.log)
+
+
+def test_toggle_while_spotify_plays_only_ends_it(dirs, mpd, player, disconnects):
+    set_flags(dirs, spotactive="1")
+    write_meta(dirs, "spotmeta.json", SPOT)
+    player.toggle()
+    assert disconnects == ["spotify"]
+    assert not any(line.startswith(("play", "pause")) for line in mpd.log)
+
+
+def test_squeezelite_is_not_switched_off(dirs, mpd, player, disconnects):
+    set_flags(dirs, slactive="1")
+    player.play("http://r/wdr5")
+    assert disconnects == []  # Trennen hieße dort: Dienst aus
+    assert any(line.startswith("playid") for line in mpd.log)
+
+
+def test_take_over_gives_up_when_moode_does_not_disconnect(dirs, mpd, player, monkeypatch):
+    from moode_podcasts import player as player_mod
+
+    set_flags(dirs, qbzactive="1")
+    monkeypatch.setattr(renderers, "disconnect", lambda kind: None)  # Flag bleibt stehen
+    monkeypatch.setattr(player_mod, "TAKEOVER_WAIT", 0.5)
+    with pytest.raises(ValueError, match="Qobuz Connect"):
+        player.play("http://r/wdr5")
+    assert not any(line.startswith("playid") for line in mpd.log)
+
+
+def test_stop_ends_renderer_and_mpd(dirs, mpd, player, disconnects):
     set_flags(dirs, spotactive="1")
     player.stop()
+    assert disconnects == ["spotify"]
     assert "stop" in mpd.log

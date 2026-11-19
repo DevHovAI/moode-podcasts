@@ -61,16 +61,22 @@ function render(S) {
   // können) – Warteschlange, Kapitel, ±30 s, Lautstärke und Sleep-Timer gehören zu MPD
   const ext = !!info.badge;
   $("#sheet").classList.toggle("ext", ext);
-  $("#sheet").classList.toggle("nocontrol", ext && !info.control);
-  $("#mini-toggle").classList.toggle("hidden", ext && !info.control);
+  // Spotify & Co.: Vor/Zurück gibt es nur in der App; Pause beendet die Verbindung,
+  // und alles, was hier gestartet wird, übernimmt den Ausgang (der Server trennt vorher)
+  $("#sheet").classList.toggle("noskip", ext && !info.control);
   $("#np-bt").classList.toggle("hidden", !ext);
   $("#np-bt").textContent = info.badge || "";
   $("#sheet-label").textContent = info.label || "Jetzt läuft";
   $("#np-seek").disabled = ext;
-  $("#np-disconnect").classList.toggle("hidden", !info.disconnect);
-  $("#np-disconnect").dataset.kind = info.disconnect || "";
   const playing = S.state === "play";
-  for (const b of [$("#mini-toggle"), $("#np-toggle")]) b.textContent = playing ? "⏸" : "▶";
+  // spielt die App, beendet ⏹ die Verbindung – der Knopf nur für eine stille Verbindung
+  $("#np-disconnect").classList.toggle("hidden", !info.disconnect || playing);
+  $("#np-disconnect").dataset.kind = info.disconnect || "";
+  const stopsApp = ext && !info.control && playing;
+  for (const b of [$("#mini-toggle"), $("#np-toggle")]) {
+    b.textContent = playing ? (stopsApp ? "⏹" : "⏸") : "▶";
+    b.title = stopsApp ? `${info.label} beenden` : "";
+  }
   $("#mini-title").textContent = info.title;
   $("#mini-sub").textContent = info.chapter ? `${info.sub} · ${info.chapter}` : info.sub;
   setSrc($("#mini-cover"), info.thumb);
